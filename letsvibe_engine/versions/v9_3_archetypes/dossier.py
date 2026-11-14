@@ -52,12 +52,15 @@ ENV_KEY = re.compile(r"(?:os\.environ(?:\.get)?\(?\[?|os\.getenv\(|process\.env\
 
 
 def files_of(repo: Path) -> dict:
+    from letsvibe.core.ingest import is_safe_repo_file
     names = subprocess.run(["git", "-C", str(repo), "ls-files"], capture_output=True, text=True).stdout.split("\n")  # nosec B603 B607 - fixed command, list arguments, no shell
     out = {}
     for n in names:
         if not n or SKIP.search(n):
             continue
         p = repo / n
+        if not is_safe_repo_file(repo, p):
+            continue
         try:
             if p.stat().st_size > 1_500_000:
                 continue
