@@ -4,11 +4,28 @@ Manages production and testing engine versions and dispatches evaluations to the
 """
 import importlib
 import json
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 REGISTRY_PATH = Path(__file__).resolve().parent / "registry.json"
 PROFILES_PATH = Path(__file__).resolve().parent / "profiles" / "project_profiles.json"
+
+
+def rubric_version_rank(version: Optional[str]) -> int:
+    """
+    Converts a rubric version string (e.g. 'v9.3', 'v9', 'v8', 'v1') into an integer rank
+    so SQLite and Python can sort reports newest-engine-first (v9.3 -> 903, v9.0/v9 -> 900, v8 -> 800, v1 -> 100).
+    """
+    if not version:
+        return 0
+    s = str(version).strip().lower()
+    m = re.match(r"^v?(\d+)(?:\.(\d+))?", s)
+    if not m:
+        return 0
+    major = int(m.group(1))
+    minor = int(m.group(2) or 0)
+    return major * 100 + minor
 
 
 def load_registry() -> List[Dict[str, Any]]:
@@ -21,6 +38,8 @@ def load_registry() -> List[Dict[str, Any]]:
             {
                 "id": "blend",
                 "engine_version": "v9.3",
+                "rubric_version": "v9.3",
+                "rubric_rank": 903,
                 "module": "v9_3_archetypes",
                 "name": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
                 "short_name": "Rubric v9.3",
@@ -40,12 +59,17 @@ def get_available_engines(include_testing: bool = False) -> List[Dict[str, Any]]
 
 
 def get_engine_info(engine_id: str) -> Optional[Dict[str, Any]]:
-    """Looks up an engine by its id or engine_version."""
+    """Looks up an engine by its id, engine_version, or rubric_version."""
     key = (engine_id or "blend").strip()
+    alias_map = {
+        "v8.0-test": "v8.0",
+        "v9.0-test": "v9.0",
+    }
+    key = alias_map.get(key, key)
     for eng in load_registry():
-        if eng.get("id") == key or eng.get("engine_version") == key:
+        if key in (eng.get("id"), eng.get("engine_version"), eng.get("rubric_version")):
             return eng
-    # Legacy aliases ("fast", "deep") map to default production engine
+    # Legacy aliases ("fast", "deep", "blend") map to default production engine
     if key in ("fast", "deep", "blend"):
         for eng in load_registry():
             if eng.get("is_default"):
@@ -75,7 +99,7 @@ def run_engine(
     info = get_engine_info(engine_id)
     module_name = (info or {}).get("module") or "v9_3_archetypes"
     mod = importlib.import_module(f"letsvibe_engine.versions.{module_name}")
-    return mod.evaluate(
+    report = mod.evaluate(
         client,
         packed_repo,
         repo_source,
@@ -84,3 +108,6 @@ def run_engine(
         progress=progress_callback,
         submission_meta=submission_meta,
     )
+    if info and info.get("rubric_version"):
+        report.rubric_version = str(info["rubric_version"])
+    return report

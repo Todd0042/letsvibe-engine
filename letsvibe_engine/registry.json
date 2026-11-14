@@ -1,9 +1,11 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "engines": [
     {
       "id": "blend",
       "engine_version": "v9.3",
+      "rubric_version": "v9.3",
+      "rubric_rank": 903,
       "module": "v9_3_archetypes",
       "name": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
       "short_name": "Rubric v9.3",
@@ -14,6 +16,8 @@
     {
       "id": "v9.4-test",
       "engine_version": "v9.4",
+      "rubric_version": "v9.4",
+      "rubric_rank": 904,
       "module": "v9_4_experimental",
       "name": "🧪 [TESTING] Rubric v9.4 — Experimental Next-Gen (Admin Only)",
       "short_name": "Rubric v9.4 (Test)",
@@ -22,14 +26,136 @@
       "description": "Sandbox engine for testing prompt refinements, scoring adjustments, and submitter context weighting."
     },
     {
-      "id": "v8.0-test",
-      "engine_version": "v8.0",
-      "module": "v8_consensus",
-      "name": "🕰️ [TESTING] Rubric v8.0 — Legacy Dual-Model Consensus (Admin Only)",
-      "short_name": "Rubric v8.0 (Legacy)",
+      "id": "v9.2",
+      "engine_version": "v9.2",
+      "rubric_version": "v9.2",
+      "rubric_rank": 902,
+      "module": "v9_2_context",
+      "name": "🕰️ [TESTING] Rubric v9.2 — Project Context & Deterministic Seed",
+      "short_name": "Rubric v9.2",
       "status": "testing",
       "is_default": false,
-      "description": "Historical 7B/14B dual-model consensus comparator for benchmarking."
+      "description": "Graders first read what the project says it is (README/GitHub/commits) with repeatable seed=0 judging."
+    },
+    {
+      "id": "v9.1",
+      "engine_version": "v9.1",
+      "rubric_version": "v9.1",
+      "rubric_rank": 901,
+      "module": "v9_1_negatives",
+      "name": "🕰️ [TESTING] Rubric v9.1 — Negative Evidence & Two-File Verification",
+      "short_name": "Rubric v9.1",
+      "status": "testing",
+      "is_default": false,
+      "description": "Problems found as reliably as strengths: explicit 'no' answers, quote relevance checks, and two-file whole-app checks."
+    },
+    {
+      "id": "v9.0",
+      "engine_version": "v9",
+      "rubric_version": "v9",
+      "rubric_rank": 900,
+      "module": "v9_0_hybrid",
+      "name": "🕰️ [TESTING] Rubric v9.0 — Original Hybrid (Dossier + 7B Code Evidence)",
+      "short_name": "Rubric v9.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Two independent reviews checked against each other: 14B App Dossier + per-factor 7B chunked code evidence."
+    },
+    {
+      "id": "v8.0",
+      "engine_version": "v8",
+      "rubric_version": "v8",
+      "rubric_rank": 800,
+      "module": "v8_0_dossier",
+      "name": "🕰️ [TESTING] Rubric v8.0 — Pure App Dossier Experience Grading",
+      "short_name": "Rubric v8.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Graded solely on what people experience via the Python-generated App Dossier and 14B fixed-point checklists (no 7B code reading)."
+    },
+    {
+      "id": "v7.0",
+      "engine_version": "v7",
+      "rubric_version": "v7",
+      "rubric_rank": 700,
+      "module": "v7_0_triage",
+      "name": "🕰️ [TESTING] Rubric v7.0 — 7-Factor Consensus + File Triage (23 Checks)",
+      "short_name": "Rubric v7.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "7-factor dual-model consensus (including Code Health & Operational Safety) with pre-review file triage and 23 binary checks."
+    },
+    {
+      "id": "v6.0",
+      "engine_version": "v6",
+      "rubric_version": "v6",
+      "rubric_rank": 600,
+      "module": "v6_0_vibe",
+      "name": "🕰️ [TESTING] Rubric v6.0 — Vibe-Coded Software Native (33 Checks)",
+      "short_name": "Rubric v6.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Introduced User Journey and merged Code Health, grading vibe-coded software against vibe-coded peers with 33 binary checks."
+    },
+    {
+      "id": "v5.0",
+      "engine_version": "v5",
+      "rubric_version": "v5",
+      "rubric_rank": 500,
+      "module": "v5_0_holds",
+      "name": "🕰️ [TESTING] Rubric v5.0 — Legacy 7-Factor + Owner Hold Flow",
+      "short_name": "Rubric v5.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Original 7 factors (Maintainability, Architecture, Functionality, UI/UX, Safety, Resonance, Creativity) with owner explanation holds."
+    },
+    {
+      "id": "v4.0",
+      "engine_version": "v4",
+      "rubric_version": "v4",
+      "rubric_rank": 400,
+      "module": "v4_0_device",
+      "name": "🕰️ [TESTING] Rubric v4.0 — Device-Aware & Relevant-Chunk Scoring",
+      "short_name": "Rubric v4.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Added hardware/platform classification, category weight clamping, and relevant-chunk factor filtering."
+    },
+    {
+      "id": "v3.0",
+      "engine_version": "v3",
+      "rubric_version": "v3",
+      "rubric_rank": 300,
+      "module": "v3_0_reliability",
+      "name": "🕰️ [TESTING] Rubric v3.0 — Anti-Truncation & Fail-Closed Consensus",
+      "short_name": "Rubric v3.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Fixed silent prompt truncation, enforced schema retries, and excluded vendored third-party libraries."
+    },
+    {
+      "id": "v2.0",
+      "engine_version": "v2",
+      "rubric_version": "v2",
+      "rubric_rank": 200,
+      "module": "v2_0_checklist",
+      "name": "🕰️ [TESTING] Rubric v2.0 — 50/50 Binary Evidence Checklist Calibration",
+      "short_name": "Rubric v2.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Blended 33 binary yes/no evidence questions 50/50 with 7B/14B model scores and aligned the 62=C grade curve."
+    },
+    {
+      "id": "v1.0",
+      "engine_version": "v1",
+      "rubric_version": "v1",
+      "rubric_rank": 100,
+      "module": "v1_0_beta",
+      "name": "🕰️ [TESTING] Rubric v1.0 — Original Beta Dual-Model Pipeline",
+      "short_name": "Rubric v1.0",
+      "status": "testing",
+      "is_default": false,
+      "description": "Initial Beta 7B micro-chunk + 14B holistic macro dual-model local grading pipeline."
     }
   ]
 }

@@ -4,6 +4,7 @@ from .api import (
     get_engine_info,
     load_project_profiles,
     load_registry,
+    rubric_version_rank,
     run_engine,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "get_engine_info",
     "load_project_profiles",
     "load_registry",
+    "rubric_version_rank",
     "run_engine",
 ]

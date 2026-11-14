@@ -7,8 +7,8 @@ import re
 import time
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-from ..core.models import (
-    CORE_FACTORS,
+from letsvibe.core.models import (
+    LEGACY_V5_FACTORS as CORE_FACTORS,
     DeterministicMetrics,
     DynamicWeights,
     FactorEvaluation,
@@ -17,19 +17,9 @@ from ..core.models import (
     ProjectArchetype,
     VibeReport,
 )
-from ..core.platforms import GENERAL_CATEGORIES, platform_context
-from .classifier import Classification
-from ..analyzers.journey_signals import journey_context
+from letsvibe.core.platforms import GENERAL_CATEGORIES, platform_context
+from letsvibe.evaluator.classifier import Classification
 from .rubric import RUBRIC_VERSION
-from .triage import ROLE_LABELS, SAFETY_ROLES
-
-
-def routing_note(role: str, factors) -> str:
-    """Tells a routed chunk what it holds and which factors (only) to rate."""
-    if not factors:
-        return ""
-    return (f"THIS CHUNK holds the project's {ROLE_LABELS.get(role, role)} files. Rate ONLY these factors from it: "
-            f"{', '.join(factors)}. Other factors are judged from other parts of the project.\n")
 from .weights import clamp_weights, ranges_for
 from .checklist import (
     CHECKLIST_SYSTEM_PROMPT,
@@ -37,7 +27,7 @@ from .checklist import (
     checklist_schema,
     score_checklist,
 )
-from .ollama import (
+from letsvibe.evaluator.ollama import (
     CHARS_PER_TOKEN,
     TEMPLATE_OVERHEAD_TOKENS,
     CpuSpilloverError,
@@ -69,17 +59,9 @@ def _real_findings(items: Any) -> List[str]:
     return [str(x).strip() for x in (items or []) if str(x).strip() and not _PLACEHOLDER_RE.search(str(x))]
 
 
-# Code that makes operational safety relevant no matter what the model says (no AI judgment):
-# network/subprocess/thread/file I/O, endless loops, and bare or swallowed exceptions.
-_SAFETY_MARKERS = re.compile(r"requests\.|httpx\.|urllib|socket\.|subprocess|threading\.|asyncio|open\(|"
-                             r"while True|except\s*:|except Exception\s*:\s*pass")
-
-
-def _batch_relevant(findings: Dict[str, Any], factor: str, text: str = "") -> bool:
+def _batch_relevant(findings: Dict[str, Any], factor: str) -> bool:
     """Localized factors count only where the batch says it contains relevant code (missing flag = relevant)."""
     if factor not in LOCALIZED_FACTORS:
-        return True
-    if factor == "operational_safety" and text and _SAFETY_MARKERS.search(text):
         return True
     entry = findings.get(factor)
     return not (isinstance(entry, dict) and entry.get("relevant") is False)
@@ -98,14 +80,14 @@ class IncompleteEvaluationError(RuntimeError):
     """Raised when the models failed to produce real scores; such reports must never be ranked."""
 
 
-def _has_all_scores(data: Any, factors: Optional[Any] = None) -> bool:
-    """True only if the model output carries a numeric score for every requested factor (default: all core factors)."""
+def _has_all_scores(data: Any) -> bool:
+    """True only if the model output carries a numeric score for every core factor."""
     if not isinstance(data, dict):
         return False
     fs = data.get("factor_scores")
     if not isinstance(fs, dict):
         return False
-    for f in (factors or CORE_FACTORS):
+    for f in CORE_FACTORS:
         try:
             float(fs[f])
         except (KeyError, TypeError, ValueError):
@@ -113,25 +95,24 @@ def _has_all_scores(data: Any, factors: Optional[Any] = None) -> bool:
     return True
 
 
-# Letter-grade cutoffs (rubric v6). This is the fallback "prior" curve, used until a category has
-# enough projects for peer percentiles (see storage/peer_grades.py). It mirrors the score bands:
-# 55-69 typical vibe-coded project (62 = C, the middle grade), 70-79 strong, 80-89 among the best.
+# Letter-grade cutoffs, aligned with the prompt rubric:
+#   55-68 = competent working project, 69-79 = solid, 80-89 = standout, 90+ = category-leading.
 GRADE_CUTOFFS = (
-    (94.0, "A+"),
-    (89.0, "A"),
-    (85.0, "A-"),
-    (81.0, "B+"),
-    (77.0, "B"),
-    (72.0, "B-"),
-    (68.0, "C+"),
-    (62.0, "C"),
-    (55.0, "C-"),
-    (40.0, "D"),
+    (95.0, "A+"),
+    (91.0, "A"),
+    (88.0, "A-"),
+    (84.0, "B+"),
+    (80.0, "B"),
+    (76.0, "B-"),
+    (72.0, "C+"),
+    (65.0, "C"),
+    (58.0, "C-"),
+    (45.0, "D"),
 )
 
 
 def calculate_letter_grade(score: float) -> str:
-    """Maps a 0-100 score to a letter grade on the prior curve (a typical vibe-coded project, ~62, earns a C)."""
+    """Maps a 0-100 score to a letter grade (a typical working project of ~62 earns a C-, not an F)."""
     for cutoff, grade in GRADE_CUTOFFS:
         if score >= cutoff:
             return grade
@@ -140,48 +121,44 @@ def calculate_letter_grade(score: float) -> str:
 
 def compute_deterministic_adjustments(metrics: DeterministicMetrics) -> Dict[str, float]:
     """
-    Bounded, objective adjustments from code measurements, so model scores stay anchored to facts.
-
-    Pitched for vibe-coded projects (rubric v6): a few very large functions are normal there,
-    so code_health tracks SYSTEMIC complexity (the average), and only an extreme outlier counts on
-    its own. Tests are rare in this population, so having some earns a small bonus.
+    Computes bounded, objective score adjustments from deterministic AST metrics
+    so LLM grade inflation is anchored by real code measurements.
     """
-    health_adj = 0.0
+    maint_adj = 0.0
     ops_adj = 0.0
     func_adj = 0.0
 
+    # 1. Cyclomatic Complexity impact on Maintainability
     avg_cc = float(metrics.avg_cyclomatic_complexity or 0.0)
     max_cc = int(metrics.max_cyclomatic_complexity or 0)
-    if avg_cc > 0:
-        if avg_cc <= 3.0 and max_cc <= 25:
-            health_adj += 4.0
-        elif avg_cc >= 8.0:
-            health_adj -= 8.0
-        elif avg_cc >= 6.0 or max_cc >= 100:
-            health_adj -= 4.0
-        elif avg_cc <= 4.5:
-            health_adj += 1.5
 
-    # Hardcoded secrets / dangerous patterns weigh on operational safety
+    if avg_cc > 0:
+        if avg_cc <= 2.8 and max_cc <= 15:
+            maint_adj += 4.0  # Exceptionally clean, modular functions
+        elif avg_cc <= 4.0 and max_cc <= 22:
+            maint_adj += 1.5
+        elif avg_cc >= 8.0 or max_cc >= 55:
+            maint_adj -= 10.0  # Severe monolithic god-functions
+        elif avg_cc >= 5.8 or max_cc >= 35:
+            maint_adj -= 5.5
+
+    # 2. Hardcoded secrets / security findings impact on Operational Safety
     if metrics.detected_secrets_count > 0:
         ops_adj -= min(18.0, metrics.detected_secrets_count * 6.0)
 
+    # 3. Test suite presence provides a modest verifiable boost to Functionality & Safety
     test_ratio = float(metrics.test_to_code_ratio or 0.0)
     if test_ratio >= 0.15:
         func_adj += 3.5
         ops_adj += 2.5
-        health_adj += 2.0
     elif test_ratio >= 0.05:
         func_adj += 1.5
-        health_adj += 2.0
 
-    return {"code_health": health_adj, "operational_safety": ops_adj, "functionality": func_adj}
-
-
-# Factors where the 7B (which reads every chunk line by line) leads the blend
-MICRO_LED_FACTORS = ("code_health", "functionality", "operational_safety")
-# Centre of the contrast stretch; matches "62 = typical vibe-coded project" with a little headroom
-STRETCH_CENTER = 65.0
+    return {
+        "maintainability": maint_adj,
+        "operational_safety": ops_adj,
+        "functionality": func_adj,
+    }
 
 
 class ConsensusEngine:
@@ -210,8 +187,6 @@ class ConsensusEngine:
         mode: str = "blend",  # "blend", "fast" (7B only), or "deep" (14B only)
         progress_callback: Optional[Callable[[str, int], None]] = None,
         classification: Optional[Classification] = None,
-        file_tree: Optional[str] = None,
-        triage_summary: str = "",
     ) -> VibeReport:
         pipeline_start = time.perf_counter()
         if isinstance(manifest_batches, str):
@@ -265,7 +240,7 @@ class ConsensusEngine:
         )
         metrics_summary = f"""
 Deterministic Static AST Metrics:
-- Total Lines of Code: {metrics.total_loc} (size only, not a quality signal)
+- Total Lines of Code: {metrics.total_loc}
 - Total Files: {metrics.total_files}
 - Languages: {metrics.languages}
 - Avg Cyclomatic Complexity: {metrics.avg_cyclomatic_complexity} (<=3.0 is very clean; >=6.0 is complex)
@@ -274,7 +249,6 @@ Deterministic Static AST Metrics:
 - Test Files Count: {metrics.test_files_count} (Test-to-Code Ratio: {metrics.test_to_code_ratio})
 - Native Standalone Packaging (Mobile APK/Desktop): {desktop_pkg_str}
 - Has License: {metrics.has_license}
-- Media assets (names only, contents not read): {metrics.media_summary}
 """
         # Classification runs before grading (see evaluator/classifier.py); without one, fall back to build-file detection
         if classification is None:
@@ -286,8 +260,6 @@ Deterministic Static AST Metrics:
             f"Category: {GENERAL_CATEGORIES.get(classification.general_category, 'Other')}\n"
             + (platform_block + "\n" if platform_block else "")
         )
-        if triage_summary:
-            metrics_summary += f"- File roles (from triage of names and contents): {triage_summary}\n"
         metrics_with_readme = metrics_summary + classification_block + readme_info
 
         if chosen_micro != self.micro_model:
@@ -299,7 +271,7 @@ Deterministic Static AST Metrics:
         # STAGE 1: Archetype Detection & Dynamic Weights
         # -------------------------------------------------------------
         emit_progress(f"Stage 1/3: Detecting project archetype & dynamic weights ({chosen_micro})...", 22)
-        first_batch_text = manifest_batches[0][1] if not file_tree else "# REPOSITORY DIRECTORY LAYOUT:\n" + file_tree
+        first_batch_text = manifest_batches[0][1]
         file_tree_snippet = first_batch_text.split("# REPOSITORY DIRECTORY LAYOUT:\n")
         tree_text = file_tree_snippet[1].split("\n--- START FILE:")[0] if len(file_tree_snippet) > 1 else first_batch_text[:4000]
 
@@ -341,15 +313,14 @@ Repository File Tree Structure:
 
         weights_raw = stage1_data.get("weights", {})
         weights_defaults = DynamicWeights()
-
-        def _w(name: str) -> float:
-            try:
-                return float(weights_raw.get(name, getattr(weights_defaults, name)))
-            except (TypeError, ValueError):
-                return getattr(weights_defaults, name)
-
         weights = DynamicWeights(
-            **{f: _w(f) for f in CORE_FACTORS},
+            maintainability=float(weights_raw.get("maintainability", weights_raw.get("complexity", weights_defaults.maintainability))),
+            functionality=float(weights_raw.get("functionality", weights_defaults.functionality)),
+            creativity=float(weights_raw.get("creativity", weights_defaults.creativity)),
+            ui_ux=float(weights_raw.get("ui_ux", weights_defaults.ui_ux)),
+            architecture=float(weights_raw.get("architecture", weights_raw.get("project_flow", weights_defaults.architecture))),
+            operational_safety=float(weights_raw.get("operational_safety", weights_defaults.operational_safety)),
+            resonance=float(weights_raw.get("resonance", weights_defaults.resonance)),
             justification=weights_raw.get("justification", weights_defaults.justification),
         ).normalize()
         # Enforce the rubric's range row for this category (the model often ignores it)
@@ -388,11 +359,7 @@ Repository File Tree Structure:
             summaries: List[str] = []
             failed_batches: List[str] = []
 
-            for b_idx, batch in enumerate(manifest_batches, 1):
-                b_title, b_content = batch[0], batch[1]
-                # Triage strategy: each chunk carries its role and the only factors it should be asked about
-                b_factors = tuple(batch[2]) if len(batch) > 2 and batch[2] else ()
-                b_role = batch[3] if len(batch) > 3 else ""
+            for b_idx, (b_title, b_content) in enumerate(manifest_batches, 1):
                 check_deadline(f"Pass 1 Micro Batch {b_idx}/{total_batches} ({b_title})")
 
                 batch_pct = 28 + int(((b_idx - 1) / max(1, total_batches)) * 48)
@@ -407,7 +374,7 @@ Intended Audience: {archetype.target_audience}
 Core Purpose: {archetype.core_purpose}
 Module Batch {b_idx}/{total_batches}: {b_title}
 {metrics_summary}
-{routing_note(b_role, b_factors)}
+
 Source Code:
 {b_content}
 """
@@ -416,12 +383,12 @@ Source Code:
                         model=chosen_micro,
                         system_prompt=SYSTEM_PROMPT_MICRO_7B,
                         user_prompt=prompt_micro,
-                        format_schema=micro_schema(b_factors, include_malware=(not b_factors or b_role in SAFETY_ROLES)),
+                        format_schema=micro_schema(),
                         max_output_tokens=1400,
                     )
                     if getattr(self.client, "last_call", {}).get("trimmed"):
                         issues_encountered.append(f"Pass 1 batch {b_title}: input trimmed to fit the context window.")
-                    if not _has_all_scores(b_res, b_factors or None):
+                    if not _has_all_scores(b_res):
                         keys = sorted(b_res.keys()) if isinstance(b_res, dict) else type(b_res).__name__
                         failed_batches.append(b_title)
                         issues_encountered.append(f"Pass 1 Micro batch {b_title} returned no usable scores (keys: {keys}).")
@@ -432,7 +399,7 @@ Source Code:
                             integrity_concerns.append({"file": str(item.get("file") or "").strip(), "code": str(item["code"]).strip()[:600]})
                     for k, v in b_res.get("factor_scores", {}).items():
                         try:
-                            target = accumulated_scores if _batch_relevant(b_findings, k, b_content) else irrelevant_scores
+                            target = accumulated_scores if _batch_relevant(b_findings, k) else irrelevant_scores
                             target.setdefault(k, []).append(float(v))
                         except (ValueError, TypeError):
                             pass
@@ -444,7 +411,7 @@ Source Code:
                             pass
 
                     for k, v in b_findings.items():
-                        if not isinstance(v, dict) or not _batch_relevant(b_findings, k, b_content):
+                        if not isinstance(v, dict) or not _batch_relevant(b_findings, k):
                             continue
                         if k not in accumulated_findings:
                             accumulated_findings[k] = {"strengths": [], "weaknesses": [], "reasoning": ""}
@@ -489,7 +456,7 @@ Source Code:
                 if not vals:
                     continue
                 mean_val = sum(vals) / len(vals)
-                if len(vals) > 1 and k in MICRO_LED_FACTORS:
+                if len(vals) > 1 and k in ("maintainability", "functionality", "operational_safety"):
                     min_val = min(vals)
                     avg_micro_scores[k] = round(mean_val * 0.65 + min_val * 0.35, 1)
                 elif len(vals) > 1 and k in ("creativity", "resonance"):
@@ -521,7 +488,7 @@ Source Code:
             try:
                 self.client.unload_all_models()
                 time.sleep(0.75)
-            except Exception:  # nosec B110 - deliberate best-effort fallback
+            except Exception:
                 pass
 
             readme_sample = metrics.readme_excerpt[:1500] if metrics.readme_excerpt else "No README available."
@@ -538,8 +505,7 @@ Source Code:
 
             # Include a representative slice of actual source code from the batches so 14B is never blind to the code
             code_excerpt_parts = []
-            for batch in manifest_batches[:2]:
-                b_title, b_text = batch[0], batch[1]
+            for b_title, b_text in manifest_batches[:2]:
                 if "--- START FILE:" in b_text:
                     code_slice = "--- START FILE:" + b_text.split("--- START FILE:", 1)[1]
                     code_excerpt_parts.append(code_slice[:1200])
@@ -558,8 +524,6 @@ Source Code:
                 "tree": tree_text[:1500],
             }
 
-            journey_block = journey_context(metrics.journey)
-
             def render_macro_input() -> str:
                 return f"""
 Project Archetype: {archetype.name} ({archetype.category})
@@ -567,7 +531,6 @@ Target Audience: {archetype.target_audience}
 Core Purpose: {archetype.core_purpose}
 
 {metrics_summary}
-{journey_block}
 
 Pass 1 Module-Level Qualitative Audit Notes (Do NOT inflate; penalize the weaknesses listed below):
 {sections["notes"]}
@@ -742,11 +705,11 @@ Repository Directory Structure:
             elif mode == "deep":
                 raw_blended = s_macro
             else:
-                if fname in MICRO_LED_FACTORS:
-                    # The 7B read every chunk line by line, so it leads on code-level factors (55%)
+                if fname in ("maintainability", "functionality", "operational_safety"):
+                    # 7B inspected 100% of batches line-by-line, so give it 55% weight on code hygiene
                     raw_blended = s_micro * 0.55 + s_macro * 0.45
                 else:
-                    # The 14B sees the whole project, so it leads on journey, UI, value and creativity (70%)
+                    # 14B leads on macro architecture, UI/UX, creativity, and resonance (70% macro / 30% micro)
                     raw_blended = s_micro * 0.30 + s_macro * 0.70
 
             # Anchor with the binary evidence checklist (50/50) when available
@@ -756,8 +719,8 @@ Repository Directory Structure:
             # Apply deterministic AST / security adjustments
             raw_blended += ast_adjustments.get(fname, 0.0)
 
-            # Gentle contrast stretch so factor scores don't all clump together
-            stretched = STRETCH_CENTER + (raw_blended - STRETCH_CENTER) * 1.25
+            # Apply gentle contrast stretch around 72.0 so individual factor scores don't clump in 80-85
+            stretched = 72.0 + (raw_blended - 72.0) * 1.25
             blended_score = round(max(0.0, min(100.0, stretched)), 1)
 
             w = weight_dict.get(fname, 14.28)
@@ -827,8 +790,6 @@ Repository Directory Structure:
         verdict_title = macro_data.get("verdict_title") or f"{archetype.category} — Grade {letter_grade}"
         verdict_summary = macro_data.get("macro_critique_summary") or micro_data.get("micro_critique_summary", "Evaluation complete.")
         priority_improvements = macro_data.get("priority_improvements", [])
-        peer_summary = str(macro_data.get("peer_summary") or "").strip()
-        pro_next_steps = _real_findings(macro_data.get("pro_next_steps"))[:5]
 
         top_strengths: List[str] = []
         for fe in sorted(factor_evaluations.values(), key=lambda x: x.score, reverse=True):
@@ -870,8 +831,6 @@ Repository Directory Structure:
             top_strengths=top_strengths,
             priority_improvements=priority_improvements[:5],
             top_solid_features=top_solid_features[:5],
-            peer_summary=peer_summary,
-            pro_next_steps=pro_next_steps,
             top_features_needing_work=top_features_needing_work[:5],
             timing_breakdown=timing_breakdown,
             issues_encountered=issues_encountered,
@@ -879,7 +838,7 @@ Repository Directory Structure:
 
         try:
             self.client.unload_all_models()
-        except Exception:  # nosec B110 - deliberate best-effort fallback
+        except Exception:
             pass
 
         return report
