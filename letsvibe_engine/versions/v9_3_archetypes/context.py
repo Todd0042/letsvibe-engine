@@ -226,6 +226,23 @@ def kind_from_files(files: Dict[str, str]) -> Optional[str]:
 # ---------------------------------------------------------------------------------------------------------------
 # Putting it together
 # ---------------------------------------------------------------------------------------------------------------
+def load_project_profiles() -> Dict[str, Any]:
+    """Loads the archetype profiles map from project_profiles.json (works in both letsvibe-engine and letsvibe)."""
+    here = Path(__file__).resolve().parent
+    candidates = [
+        here.parent / "profiles" / "project_profiles.json",
+        here.parent.parent / "profiles" / "project_profiles.json",
+        here.parent.parent / "data" / "project_profiles.json",
+    ]
+    for profiles_path in candidates:
+        if profiles_path.exists():
+            try:
+                return json.loads(profiles_path.read_text(encoding="utf-8")).get("profiles", {})
+            except Exception:
+                pass
+    return {}
+
+
 def detect_project_profile(
     files: Dict[str, str],
     kind_hint: Optional[str] = None,
@@ -233,13 +250,7 @@ def detect_project_profile(
     explicit_profile: Optional[str] = None,
 ) -> Tuple[str, Dict[str, Any]]:
     """Assigns the project to one of the archetypes in project_profiles.json, falling back to unknown_or_general."""
-    profiles_path = Path(__file__).resolve().parent.parent.parent / "data" / "project_profiles.json"
-    profiles_map = {}
-    if profiles_path.exists():
-        try:
-            profiles_map = json.loads(profiles_path.read_text(encoding="utf-8")).get("profiles", {})
-        except Exception:
-            pass
+    profiles_map = load_project_profiles()
 
     if explicit_profile and explicit_profile != "auto" and explicit_profile in profiles_map:
         return explicit_profile, profiles_map[explicit_profile]
