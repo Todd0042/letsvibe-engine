@@ -1,0 +1,185 @@
+{
+  "created": "2026-11-12T18:54:26+00:00",
+  "rubric_version": "v8",
+  "pipeline": "v8-experience",
+  "models": {
+    "checklists_and_descriptions": "qwen2.5-coder:14b",
+    "archetype_embeddings": "mxbai-embed-large"
+  },
+  "runs_per_anchor": 3,
+  "why": "AI reviewers are good at comparing projects but poor at absolute scores: they hedge toward the middle. In LetsVibe's own testing, a deliberately terrible app and a carefully built one, graded by the same pipeline, averaged about 28 and 68 on a 0-100 scale, and repeated runs of the same project varied by several points. A raw score therefore says little on its own, so LetsVibe grades on a bell curve: what counts is how your project compares, first with two published reference projects and then with the other projects in its category.",
+  "peer_min_projects": 30,
+  "a_requires_position": 0.75,
+  "f_below_position": 0.1,
+  "grade_bands_z": [
+    [
+      2.0,
+      "A+"
+    ],
+    [
+      1.75,
+      "A"
+    ],
+    [
+      1.5,
+      "A-"
+    ],
+    [
+      1.17,
+      "B+"
+    ],
+    [
+      0.83,
+      "B"
+    ],
+    [
+      0.5,
+      "B-"
+    ],
+    [
+      0.17,
+      "C+"
+    ],
+    [
+      -0.17,
+      "C"
+    ],
+    [
+      -0.5,
+      "C-"
+    ],
+    [
+      -1.5,
+      "D"
+    ]
+  ],
+  "anchors": {
+    "top": {
+      "name": "Fair Share",
+      "repo": "Todd0042/letsvibe-good",
+      "prompt": "make a lightweight application for literally anything that satisfies all of the aspects in prompts.py and is under 1000 lines of code",
+      "made_by": "Written by Claude Opus 5.5 (Anthropic) in Claude Code from a prompt by LetsVibe's creator, who wrote none of the code. Full details in the repository's PROVENANCE.md.",
+      "url": "https://github.com/Todd0042/letsvibe-good",
+      "commit": "da068f9",
+      "runs": [
+        {
+          "score": 76.8,
+          "minutes": 3.1,
+          "category": "web_app",
+          "factors": {
+            "resonance": 95.0,
+            "creativity": 55.0,
+            "user_journey": 80.0,
+            "functionality": 70.0,
+            "ui_ux": 82.0
+          }
+        },
+        {
+          "score": 79.2,
+          "minutes": 2.9,
+          "category": "web_app",
+          "factors": {
+            "resonance": 95.0,
+            "creativity": 55.0,
+            "user_journey": 92.0,
+            "functionality": 70.0,
+            "ui_ux": 82.0
+          }
+        },
+        {
+          "score": 74.4,
+          "minutes": 3.1,
+          "category": "web_app",
+          "factors": {
+            "resonance": 95.0,
+            "creativity": 55.0,
+            "user_journey": 80.0,
+            "functionality": 57.0,
+            "ui_ux": 82.0
+          }
+        }
+      ],
+      "mean": 76.8,
+      "min": 74.4,
+      "max": 79.2,
+      "stdev": 2.4,
+      "report": {
+        "verdict_title": "Chore chart / chore rotation",
+        "peer_summary": "",
+        "top_solid_features": [
+          "Bigger jobs count for more effort",
+          "Time away pauses share instead of piling it up",
+          "No accounts, no cloud, local data storage only"
+        ],
+        "top_features_needing_work": [
+          "The launch experience requires manual setup, which can be confusing and time-consuming for users.",
+          "Users need to remember specific commands to change the port or run the application locally, making it difficult to use.",
+          "Improving the setup process could enhance user satisfaction by reducing complexity and increasing ease of use."
+        ],
+        "pro_next_steps": []
+      }
+    },
+    "bottom": {
+      "name": "TaskMaster Ultimate Pro",
+      "repo": "Todd0042/letsvibe-bad",
+      "prompt": "make a heavyweight application for literally anything that ignores all of the aspects in prompts.py and is under 1000 lines of code",
+      "made_by": "Written by Claude Opus 5.5 (Anthropic) in Claude Code from the reverse of the top anchor's prompt; bad on purpose but harmless. Full details in the repository's PROVENANCE.md.",
+      "url": "https://github.com/Todd0042/letsvibe-bad",
+      "commit": "99bdeb4",
+      "runs": [
+        {
+          "score": 33.2,
+          "minutes": 2.1,
+          "category": "application",
+          "factors": {
+            "resonance": 15.0,
+            "creativity": 25.0,
+            "user_journey": 72.0,
+            "functionality": 29.0,
+            "ui_ux": 29.0
+          }
+        },
+        {
+          "score": 28.4,
+          "minutes": 2.2,
+          "category": "application",
+          "factors": {
+            "resonance": 15.0,
+            "creativity": 25.0,
+            "user_journey": 48.0,
+            "functionality": 29.0,
+            "ui_ux": 29.0
+          }
+        },
+        {
+          "score": 33.2,
+          "minutes": 2.2,
+          "category": "application",
+          "factors": {
+            "resonance": 15.0,
+            "creativity": 25.0,
+            "user_journey": 72.0,
+            "functionality": 29.0,
+            "ui_ux": 29.0
+          }
+        }
+      ],
+      "mean": 31.6,
+      "min": 28.4,
+      "max": 33.2,
+      "stdev": 2.77,
+      "report": {
+        "verdict_title": "Text editor / code editor",
+        "peer_summary": "",
+        "top_solid_features": [],
+        "top_features_needing_work": [
+          "The project's core flow needs to be fully developed and connected features should work together seamlessly.",
+          "The user interface should be simplified, using clear language and a consistent design style to improve the user experience.",
+          "Automating the setup process for users could enhance their initial experience with the product."
+        ],
+        "pro_next_steps": []
+      }
+    }
+  },
+  "method": "Each reference project was graded 3 times with the same pipeline every submission goes through, and the averages are used: 31.6 for the bottom reference and 76.8 for the top. LetsVibe grades on a bell curve: your letter depends on how far your raw score sits above or below the average, measured in standard deviations. Until your category has projects of its own, the bell is set by the references: the average is their midpoint (54.2) and one standard deviation is a quarter of the gap between them (11.3), so the top reference sits two standard deviations above average and the bottom one two below. Each project added to your category shifts the bell toward that category's own average and spread, fully at 30 projects. Two rules tie letters to the references: an A also needs a score at least 75% of the way from the bottom reference to the top one, and a score less than 10% of the way is an F."
+}

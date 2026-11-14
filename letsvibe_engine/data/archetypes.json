@@ -1,0 +1,557 @@
+{
+  "_note": "Starter list of 'done a million times' vibe-coded archetypes (written by Claude, 2026-11-12, for Todd to review and extend). Each is something a single short prompt routinely produces.",
+  "archetypes": [
+    {
+      "name": "Todo list",
+      "description": "A to-do list app where you add, check off and delete tasks, maybe with categories or due dates."
+    },
+    {
+      "name": "Kanban board",
+      "description": "A Trello-style board with columns and draggable task cards."
+    },
+    {
+      "name": "Pomodoro timer",
+      "description": "A focus timer that counts 25-minute work sessions and short breaks."
+    },
+    {
+      "name": "Habit tracker",
+      "description": "Track daily habits with checkmarks, streaks and a calendar heatmap."
+    },
+    {
+      "name": "Expense / budget tracker",
+      "description": "Log income and expenses by category and show totals and charts of where money goes."
+    },
+    {
+      "name": "Markdown notes",
+      "description": "A note-taking app with markdown editing, preview and saved notes."
+    },
+    {
+      "name": "Journal / diary",
+      "description": "Write dated journal entries, maybe with mood tags."
+    },
+    {
+      "name": "Mood tracker",
+      "description": "Record your mood each day and see a chart of it over time."
+    },
+    {
+      "name": "Water / calorie tracker",
+      "description": "Log water intake or meals and calories against a daily goal."
+    },
+    {
+      "name": "Workout logger",
+      "description": "Log exercises, sets and reps and view workout history."
+    },
+    {
+      "name": "Recipe manager",
+      "description": "Store recipes with ingredients and steps, search and favorite them."
+    },
+    {
+      "name": "Shopping list",
+      "description": "A grocery or shopping list you can add to and check off."
+    },
+    {
+      "name": "Flashcards / quiz",
+      "description": "Study flashcards or a multiple-choice quiz with scoring."
+    },
+    {
+      "name": "Weather app",
+      "description": "Show the current weather and forecast for a searched city from a weather API."
+    },
+    {
+      "name": "Stock / crypto price viewer",
+      "description": "Search stock or crypto tickers and show prices and charts from a finance API."
+    },
+    {
+      "name": "Currency converter",
+      "description": "Convert amounts between currencies using exchange rates."
+    },
+    {
+      "name": "Unit converter",
+      "description": "Convert between units like length, weight and temperature."
+    },
+    {
+      "name": "Calculator",
+      "description": "A basic or scientific calculator."
+    },
+    {
+      "name": "Tip / loan / mortgage calculator",
+      "description": "Calculate tips, loan payments or mortgage schedules."
+    },
+    {
+      "name": "Password generator",
+      "description": "Generate random passwords with length and character options."
+    },
+    {
+      "name": "QR code generator",
+      "description": "Turn text or a link into a QR code image."
+    },
+    {
+      "name": "URL shortener",
+      "description": "Shorten long links and redirect them."
+    },
+    {
+      "name": "Countdown / stopwatch",
+      "description": "A countdown timer, stopwatch or event countdown."
+    },
+    {
+      "name": "Clock / world clock",
+      "description": "Show the time, alarms or several time zones."
+    },
+    {
+      "name": "Color palette generator",
+      "description": "Generate and copy color palettes."
+    },
+    {
+      "name": "Random quote generator",
+      "description": "Show a random inspirational quote with a new-quote button."
+    },
+    {
+      "name": "Personal portfolio website",
+      "description": "A personal website with an about section, projects and contact form."
+    },
+    {
+      "name": "Landing page",
+      "description": "A marketing landing page for a product with hero, features and signup."
+    },
+    {
+      "name": "Blog",
+      "description": "A simple blog with posts, maybe comments and an admin editor."
+    },
+    {
+      "name": "Chat UI wrapper for an AI API",
+      "description": "A chat interface that sends messages to an AI model API and shows replies."
+    },
+    {
+      "name": "AI text summarizer / rewriter",
+      "description": "Paste text and get an AI summary, rewrite or translation."
+    },
+    {
+      "name": "AI image generator front end",
+      "description": "Type a prompt and show images from an image-generation API."
+    },
+    {
+      "name": "Real-time chat app",
+      "description": "A chat room app with usernames and live messages over websockets."
+    },
+    {
+      "name": "Social media clone",
+      "description": "A Twitter or Instagram style feed with posts, likes and follows."
+    },
+    {
+      "name": "File explorer / file manager",
+      "description": "Browse folders and copy, move, rename or delete files."
+    },
+    {
+      "name": "Text editor / code editor",
+      "description": "A basic text or code editor with open and save."
+    },
+    {
+      "name": "Music player",
+      "description": "Play local audio files with a playlist, play, pause and skip."
+    },
+    {
+      "name": "Video player",
+      "description": "Play local video files with basic controls and a library."
+    },
+    {
+      "name": "Image viewer / gallery",
+      "description": "Browse and view images in a grid or slideshow."
+    },
+    {
+      "name": "Photo editor with filters",
+      "description": "Apply filters, crop and adjust brightness on images."
+    },
+    {
+      "name": "Drawing / paint app",
+      "description": "A canvas to draw with brushes, colors and an eraser."
+    },
+    {
+      "name": "Pixel art editor",
+      "description": "Draw pixel art on a grid and export it."
+    },
+    {
+      "name": "System monitor dashboard",
+      "description": "Show CPU, memory, disk and network usage with charts."
+    },
+    {
+      "name": "Admin dashboard template",
+      "description": "A dashboard with sidebar navigation, cards and charts of sample data."
+    },
+    {
+      "name": "CRUD inventory manager",
+      "description": "Add, edit and delete items in a table with search, stored in a database."
+    },
+    {
+      "name": "Contact / address book",
+      "description": "Store contacts with names, phones and emails."
+    },
+    {
+      "name": "Bookmark manager",
+      "description": "Save and organize links with tags."
+    },
+    {
+      "name": "Reading list / book tracker",
+      "description": "Track books you want to read and have read, with ratings."
+    },
+    {
+      "name": "Movie / TV watchlist",
+      "description": "Search movies from an API and keep a watchlist."
+    },
+    {
+      "name": "Event calendar / planner",
+      "description": "A calendar for adding events and reminders."
+    },
+    {
+      "name": "Invoice generator",
+      "description": "Fill in client and line items and export an invoice PDF."
+    },
+    {
+      "name": "Resume builder",
+      "description": "Fill in a form and generate a formatted resume."
+    },
+    {
+      "name": "Form builder / survey",
+      "description": "Create forms or surveys and collect responses."
+    },
+    {
+      "name": "Poll / voting app",
+      "description": "Create a poll and let people vote, then show results."
+    },
+    {
+      "name": "Discord / Telegram bot",
+      "description": "A chat bot that responds to commands in a chat server."
+    },
+    {
+      "name": "Web scraper",
+      "description": "Download web pages and extract data into a file."
+    },
+    {
+      "name": "Command-line utility wrapper",
+      "description": "A small command-line tool that wraps another program or API."
+    },
+    {
+      "name": "File organizer script",
+      "description": "Sort files in a folder into subfolders by type or date."
+    },
+    {
+      "name": "Batch file renamer",
+      "description": "Rename many files at once with patterns."
+    },
+    {
+      "name": "Snake",
+      "description": "The classic snake game that grows by eating food."
+    },
+    {
+      "name": "Tetris clone",
+      "description": "Falling blocks that clear lines."
+    },
+    {
+      "name": "Pong",
+      "description": "Two paddles bouncing a ball."
+    },
+    {
+      "name": "Breakout / brick breaker",
+      "description": "Bounce a ball off a paddle to break bricks."
+    },
+    {
+      "name": "Flappy Bird clone",
+      "description": "Tap to flap a bird through gaps in pipes."
+    },
+    {
+      "name": "Space shooter",
+      "description": "A ship shooting waves of enemies or asteroids, maybe with power-ups and bosses."
+    },
+    {
+      "name": "Asteroids clone",
+      "description": "Rotate and thrust a ship to shoot breaking asteroids."
+    },
+    {
+      "name": "Vampire Survivors-like",
+      "description": "Auto-attacking character surviving waves of enemies, collecting XP and upgrades."
+    },
+    {
+      "name": "Endless runner",
+      "description": "A character running forward, jumping over obstacles for a high score."
+    },
+    {
+      "name": "Platformer",
+      "description": "Jump between platforms, avoid enemies and reach the goal."
+    },
+    {
+      "name": "Tower defense",
+      "description": "Place towers along a path to stop waves of enemies."
+    },
+    {
+      "name": "Idle / clicker game",
+      "description": "Click to earn currency and buy upgrades that earn automatically."
+    },
+    {
+      "name": "2048 clone",
+      "description": "Slide numbered tiles to merge them."
+    },
+    {
+      "name": "Memory matching game",
+      "description": "Flip cards to find matching pairs."
+    },
+    {
+      "name": "Tic-tac-toe",
+      "description": "Noughts and crosses against a friend or simple AI."
+    },
+    {
+      "name": "Minesweeper",
+      "description": "Reveal squares on a grid without hitting mines."
+    },
+    {
+      "name": "Sudoku",
+      "description": "Fill a 9x9 grid puzzle."
+    },
+    {
+      "name": "Wordle clone",
+      "description": "Guess a five-letter word in six tries with colored hints."
+    },
+    {
+      "name": "Hangman",
+      "description": "Guess letters of a hidden word."
+    },
+    {
+      "name": "Trivia quiz game",
+      "description": "Answer trivia questions from a question bank or API."
+    },
+    {
+      "name": "Chess / checkers",
+      "description": "Play chess or checkers on a board."
+    },
+    {
+      "name": "Card game (solitaire / blackjack)",
+      "description": "A classic card game like solitaire or blackjack."
+    },
+    {
+      "name": "Text adventure",
+      "description": "A story game played by typing or choosing options between rooms or scenes."
+    },
+    {
+      "name": "Turn-based RPG battle",
+      "description": "Choose attacks and items in turn-based fights against enemies."
+    },
+    {
+      "name": "Roguelike dungeon crawler",
+      "description": "Explore procedurally generated dungeons, fight monsters and collect loot."
+    },
+    {
+      "name": "Farming / life sim",
+      "description": "Plant crops, harvest and sell them over in-game days."
+    },
+    {
+      "name": "Virtual pet",
+      "description": "Feed and care for a pet whose needs drop over time."
+    },
+    {
+      "name": "Typing speed test",
+      "description": "Type a passage and measure words per minute and accuracy."
+    },
+    {
+      "name": "Piano / drum machine",
+      "description": "Play notes or beats with keys or pads."
+    },
+    {
+      "name": "Metronome / tuner",
+      "description": "A metronome or instrument tuner."
+    },
+    {
+      "name": "Soundboard",
+      "description": "Buttons that play short sound clips."
+    },
+    {
+      "name": "Karaoke player",
+      "description": "Play songs with on-screen lyrics for singing along."
+    },
+    {
+      "name": "Podcast / RSS reader",
+      "description": "Subscribe to feeds and read or play new items."
+    },
+    {
+      "name": "News aggregator",
+      "description": "Show headlines from news APIs or feeds."
+    },
+    {
+      "name": "Translator",
+      "description": "Translate text between languages using an API."
+    },
+    {
+      "name": "Speech-to-text / voice notes",
+      "description": "Record voice and turn it into text notes."
+    },
+    {
+      "name": "Smart home dashboard",
+      "description": "Show and control home devices or sensors on a dashboard."
+    },
+    {
+      "name": "Car / vehicle dashboard",
+      "description": "Show vehicle data such as speed and engine readings on a screen."
+    },
+    {
+      "name": "Fitness / step counter (mobile)",
+      "description": "Count steps or track runs on a phone."
+    },
+    {
+      "name": "Meditation / breathing app",
+      "description": "Guided breathing animation or meditation timer."
+    },
+    {
+      "name": "Sleep tracker / alarm",
+      "description": "Track sleep times or wake you with a smart alarm."
+    },
+    {
+      "name": "Medication reminder",
+      "description": "Remind you to take medicines on a schedule."
+    },
+    {
+      "name": "Language learning drills",
+      "description": "Practice vocabulary in a foreign language with quizzes."
+    },
+    {
+      "name": "Math practice game",
+      "description": "Practice arithmetic problems with scoring."
+    },
+    {
+      "name": "Personal finance dashboard",
+      "description": "Import bank transactions and show spending and net worth."
+    },
+    {
+      "name": "Crypto portfolio tracker",
+      "description": "Track crypto holdings and their value."
+    },
+    {
+      "name": "Job application tracker",
+      "description": "Track job applications and their status."
+    },
+    {
+      "name": "Time tracker",
+      "description": "Start and stop timers for projects and see time spent."
+    },
+    {
+      "name": "Project management tool",
+      "description": "Projects, tasks, assignees and deadlines."
+    },
+    {
+      "name": "Wiki / knowledge base",
+      "description": "Pages of linked notes you can search."
+    },
+    {
+      "name": "Chatroom with AI characters",
+      "description": "Talk to AI personas or characters in a chat window."
+    },
+    {
+      "name": "Code snippet manager",
+      "description": "Save and search code snippets with tags."
+    },
+    {
+      "name": "Markdown to HTML/PDF converter",
+      "description": "Convert markdown files into HTML or PDF."
+    },
+    {
+      "name": "Image / file format converter",
+      "description": "Convert images or files between formats."
+    },
+    {
+      "name": "Video downloader",
+      "description": "Download videos from a website by URL."
+    },
+    {
+      "name": "Screen recorder / screenshot tool",
+      "description": "Capture the screen to images or video."
+    },
+    {
+      "name": "Clipboard manager",
+      "description": "Keep a history of copied text."
+    },
+    {
+      "name": "App / game launcher",
+      "description": "A menu that launches other apps or games."
+    },
+    {
+      "name": "Media server / library",
+      "description": "Index local media and stream it to other devices."
+    },
+    {
+      "name": "Leaderboard / score site",
+      "description": "A website that ranks entries or users by score."
+    },
+    {
+      "name": "Link-in-bio page",
+      "description": "A single page of links to someone's profiles."
+    },
+    {
+      "name": "Static site generator",
+      "description": "Build a website from markdown files and templates."
+    },
+    {
+      "name": "Browser extension utility",
+      "description": "A small browser extension that tweaks pages or adds a button."
+    },
+    {
+      "name": "Desktop widget / tray app",
+      "description": "A small always-on widget or system tray tool."
+    },
+    {
+      "name": "Party / drinking game",
+      "description": "A game of prompts or dares for a group at a party."
+    },
+    {
+      "name": "Dice roller / random picker",
+      "description": "Roll dice or randomly pick a name or option."
+    },
+    {
+      "name": "Tabletop RPG character sheet",
+      "description": "Track a tabletop character's stats, inventory and rolls."
+    },
+    {
+      "name": "Birthday / gift reminder",
+      "description": "Remember birthdays and gift ideas."
+    },
+    {
+      "name": "Plant care tracker",
+      "description": "Remind you when to water plants."
+    },
+    {
+      "name": "Parking / location saver",
+      "description": "Save where you parked or a location on a map."
+    },
+    {
+      "name": "Map with markers",
+      "description": "Show places on an interactive map with pins."
+    },
+    {
+      "name": "Travel itinerary planner",
+      "description": "Plan trips day by day with places and bookings."
+    },
+    {
+      "name": "Restaurant / menu ordering",
+      "description": "Browse a menu and place food orders."
+    },
+    {
+      "name": "E-commerce store clone",
+      "description": "Product listings, cart and checkout."
+    },
+    {
+      "name": "Booking / appointment scheduler",
+      "description": "Pick time slots and book appointments."
+    },
+    {
+      "name": "Chore chart / chore rotation",
+      "description": "Assign household chores to people in turn and track who has done what."
+    },
+    {
+      "name": "Bill splitter / shared expenses",
+      "description": "Split bills and shared expenses between roommates or friends and show who owes whom."
+    },
+    {
+      "name": "Gift exchange / secret santa",
+      "description": "Draw names for a gift exchange and keep wish lists."
+    },
+    {
+      "name": "Family / household organizer",
+      "description": "Shared lists, calendar and reminders for a household."
+    }
+  ]
+}

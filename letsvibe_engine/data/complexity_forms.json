@@ -1,0 +1,13 @@
+{
+ "_note": "Typical number of functions for each form of program, for the complexity rating (evaluator/fit/complexity.py). Hand-set by Claude 2026-11-13 from Todd's projects; to be replaced by real percentiles per form once enough projects are graded. Tests, vendored libraries and story/content files are never counted.",
+ "forms": {
+  "terminal": {"label": "terminal app", "functions": [5, 150]},
+  "bot":      {"label": "bot", "functions": [5, 150]},
+  "embedded": {"label": "hardware project", "functions": [10, 300]},
+  "library":  {"label": "library", "functions": [10, 400]},
+  "game":     {"label": "game", "functions": [20, 400]},
+  "web":      {"label": "web app", "functions": [20, 500]},
+  "mobile":   {"label": "mobile app", "functions": [30, 500]},
+  "desktop":  {"label": "desktop app", "functions": [30, 600]}
+ }
+}

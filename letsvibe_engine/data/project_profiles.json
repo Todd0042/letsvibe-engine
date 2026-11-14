@@ -1,0 +1,215 @@
+{
+  "_version": "1.0",
+  "_purpose": "Profile definitions and domain-specific evaluation lenses for vibe-coded software.",
+  "profiles": {
+    "developer_tool_or_mcp": {
+      "name": "Developer Tool / MCP Server",
+      "description": "CLI utilities, MCP servers, developer extensions, APIs, and AI agent skills.",
+      "file_signals": [
+        "mcp.json", "plugin.json", "setup.py", "pyproject.toml", "Cargo.toml", "package.json"
+      ],
+      "indicator_patterns": [
+        "mcp", "modelcontextprotocol", "tools:", "call_tool", "argparse", "click", "typer",
+        "cli", "json-rpc", "stdin", "stdout", "subcommand", "schema"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does this tool grant AI models or developers a genuine new capability, eliminating manual friction or hallucinated reasoning?",
+          "rewards": ["solves a real developer pain point", "high leverage for agents or CLI workflows"]
+        },
+        "ui_ux": {
+          "focus": "Ergonomics: schema precision, clear CLI flags, informative terminal/log formatting, and structured output.",
+          "exemptions": [
+            "screen_reader_labels",
+            "avoidance_of_technical_jargon",
+            "form_contrast",
+            "consumer_onboarding_wizards"
+          ],
+          "clarity_definition": "Clear parameter names, explicit error messages, and well-documented tool signatures. Technical terminology is an asset, not clutter."
+        },
+        "functionality": {
+          "focus": "Contract execution: robust error returns on invalid input, exit code discipline, and clean pipeline integration.",
+          "evidence_sources": ["tool handler functions", "JSON-RPC error codes", "CLI parser validation"]
+        },
+        "user_journey": {
+          "focus": "Fast installation (e.g. npm i, pip install, one-line MCP config), zero required accounts/surveys, and clear local state caching."
+        }
+      }
+    },
+    "interactive_game_or_simulation": {
+      "name": "Game / Interactive Simulation",
+      "description": "2D/3D games, canvas visualizers, physics playgrounds, and interactive retro arcade experiences.",
+      "file_signals": [
+        "pygame", "godot", "phaser", "three.js", "pixi", "canvas", "webgl", "audio", "sfx"
+      ],
+      "indicator_patterns": [
+        "game_loop", "pygame", "sprite", "delta_time", "collision", "bullet", "enemy",
+        "high_score", "canvas.getcontext", "requestanimationframe", "render", "keys_pressed"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does the game loop provide an engaging hook, cohesive visual theme, and satisfying mechanics beyond a basic template?",
+          "rewards": ["original gameplay mechanics", "satisfying feedback loop", "replayability"]
+        },
+        "ui_ux": {
+          "focus": "Arcade feel: frame smoothness, input responsiveness, HUD legibility, and audio/visual impact.",
+          "exemptions": [
+            "standard_navigation_menus",
+            "account_sign_in_forms",
+            "crud_data_tables",
+            "avoidance_of_gaming_terms"
+          ],
+          "clarity_definition": "Immediate comprehension of health/score/controls without confusing on-screen overlays."
+        },
+        "functionality": {
+          "focus": "Gameplay loop balance: difficulty curve, absence of degenerate dominant strategies (e.g. infinite hold-spin), proper win/loss/restart state transitions."
+        },
+        "user_journey": {
+          "focus": "Instant playability: zero configuration, immediate key binding responsiveness, fast restart loop on defeat."
+        }
+      }
+    },
+    "media_or_social_lounge": {
+      "name": "Media / Audio / Local Social Lounge",
+      "description": "Karaoke lounges, music/video players, party games, and multi-device local network entertainment.",
+      "file_signals": [
+        "websockets", "fastapi", "webrtc", "audio", "sounddevice", "howler", "ffmpeg"
+      ],
+      "indicator_patterns": [
+        "karaoke", "queue", "singer", "player", "dsp", "latency", "lyrics", "websocket",
+        "qr_code", "room_code", "now_playing", "audio_stream"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does it bring people together or solve a media playback challenge with zero friction for guests?",
+          "rewards": ["zero-install mobile controller pairing", "real-time audio sync", "fair queueing"]
+        },
+        "ui_ux": {
+          "focus": "Dual-screen harmony: high-contrast stage display legible from across a living room, alongside intuitive mobile guest controls.",
+          "exemptions": [
+            "avoidance_of_audio_terminology"
+          ],
+          "clarity_definition": "Big, bold stage presentation with responsive guest controller web views."
+        },
+        "functionality": {
+          "focus": "Real-time state synchronization across devices, smooth audio/video playback without stutter, and fair queue management."
+        },
+        "user_journey": {
+          "focus": "Guest onboarding speed: join via QR code/local URL in seconds with no app download or mandatory account sign-up."
+        }
+      }
+    },
+    "hardware_iot_or_mobile": {
+      "name": "Hardware / IoT / Mobile Companion",
+      "description": "Raspberry Pi controllers, car dashboard HUDs, sensor loggers, and Android/companion APKs.",
+      "file_signals": [
+        "androidmanifest.xml", "gpio", "serial", "bluetooth", "canbus", "obd", "kivy"
+      ],
+      "indicator_patterns": [
+        "gpio", "obd2", "baudrate", "telemetry", "sensor", "hardware", "screen_brightness",
+        "gauge", "serial.serial", "bluetooth"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does it turn raw sensor/hardware signals into actionable, real-time driver or user intelligence?",
+          "rewards": ["hardware fault tolerance", "offline resilience", "glanceable telemetry"]
+        },
+        "ui_ux": {
+          "focus": "Glanceability: high-contrast gauges, oversized touch targets, night-mode ergonomics, and zero distractions.",
+          "exemptions": [
+            "desktop_multi_window_controls",
+            "dense_text_data_tables"
+          ]
+        },
+        "functionality": {
+          "focus": "Resilient sensor polling, automatic reconnection on hardware disconnect, and thread-safe data reads."
+        },
+        "user_journey": {
+          "focus": "Fast boot time, automatic startup on power-on, and clean headless fallback options."
+        }
+      }
+    },
+    "web_productivity_app": {
+      "name": "Web Productivity / Dashboard App",
+      "description": "Budget trackers, note takers, personal analytics, and structured database tools.",
+      "file_signals": [
+        "react", "vue", "svelte", "tailwind", "sqlite", "fastapi", "django"
+      ],
+      "indicator_patterns": [
+        "dashboard", "analytics", "transaction", "category", "budget", "chart.js", "table",
+        "filter", "modal", "export_csv"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does it provide a genuine cohesive twist over generic single-prompt templates?",
+          "rewards": ["distinctive financial/organization workflow", "data visualization clarity"]
+        },
+        "ui_ux": {
+          "focus": "Clean layout, responsive tables, plain English labels, clear empty states, and accessible contrast."
+        },
+        "functionality": {
+          "focus": "End-to-end CRUD operations, data validation, feedback on save, and resilient export/import."
+        },
+        "user_journey": {
+          "focus": "Zero forced sign-in if local-first, automatic local state preservation, and clear data export."
+        }
+      }
+    },
+    "automation_script_or_pipeline": {
+      "name": "Automation Script / Data Pipeline",
+      "description": "Scrapers, ETL scripts, file processors, and batch workflow tools.",
+      "file_signals": [
+        "playwright", "beautifulsoup", "selenium", "scrapy", "cron"
+      ],
+      "indicator_patterns": [
+        "scrape", "crawler", "batch", "export", "pipeline", "extract", "transform", "load"
+      ],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does it reliably automate a tedious human task with robust output formats?",
+          "rewards": ["rate limit handling", "idempotent execution", "structured data export"]
+        },
+        "ui_ux": {
+          "focus": "Terminal progress bars, clear execution summaries, and informative logging.",
+          "exemptions": [
+            "graphical_ui_elements",
+            "css_styling",
+            "screen_reader_labels"
+          ]
+        },
+        "functionality": {
+          "focus": "Network retry backoff, graceful exit on interrupt, and schema validation of parsed data."
+        },
+        "user_journey": {
+          "focus": "One-command execution, clear environment configuration (.env), and predictable destination files."
+        }
+      }
+    },
+    "unknown_or_general": {
+      "name": "General Software / Unknown Archetype",
+      "description": "General or versatile software projects without a clear single-domain archetype or with minimal documentation.",
+      "file_signals": [],
+      "indicator_patterns": [],
+      "evaluation_lenses": {
+        "value": {
+          "core_question": "Does this software accomplish a coherent, functional purpose for a real user or developer?",
+          "rewards": ["working functionality", "solves a clear problem"]
+        },
+        "ui_ux": {
+          "focus": "Basic clarity and usability according to whatever interface is present (terminal, web, or desktop).",
+          "exemptions": [
+            "screen_reader_labels",
+            "advanced_animation_polish"
+          ],
+          "clarity_definition": "Readable text and functional controls without assuming high-end design polish."
+        },
+        "functionality": {
+          "focus": "Core flow completion: does what is built run without crashing or halting in error states?"
+        },
+        "user_journey": {
+          "focus": "Reasonable onboarding: clear instructions or intuitive startup steps."
+        }
+      }
+    }
+  }
+}

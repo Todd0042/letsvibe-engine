@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "engines": [
+    {
+      "id": "blend",
+      "engine_version": "v9.3",
+      "module": "v9_3_archetypes",
+      "name": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
+      "short_name": "Rubric v9.3",
+      "status": "production",
+      "is_default": true,
+      "description": "Evaluates real-world value, creativity, user journey, functionality, and UI/UX with 7 domain archetype lenses and exemptions."
+    },
+    {
+      "id": "v9.4-test",
+      "engine_version": "v9.4",
+      "module": "v9_4_experimental",
+      "name": "🧪 [TESTING] Rubric v9.4 — Experimental Next-Gen (Admin Only)",
+      "short_name": "Rubric v9.4 (Test)",
+      "status": "testing",
+      "is_default": false,
+      "description": "Sandbox engine for testing prompt refinements, scoring adjustments, and submitter context weighting."
+    },
+    {
+      "id": "v8.0-test",
+      "engine_version": "v8.0",
+      "module": "v8_consensus",
+      "name": "🕰️ [TESTING] Rubric v8.0 — Legacy Dual-Model Consensus (Admin Only)",
+      "short_name": "Rubric v8.0 (Legacy)",
+      "status": "testing",
+      "is_default": false,
+      "description": "Historical 7B/14B dual-model consensus comparator for benchmarking."
+    }
+  ]
+}
