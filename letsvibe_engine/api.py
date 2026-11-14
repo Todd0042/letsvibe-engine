@@ -37,15 +37,15 @@ def load_registry() -> List[Dict[str, Any]]:
         return [
             {
                 "id": "blend",
-                "engine_version": "v9.3",
-                "rubric_version": "v9.3",
-                "rubric_rank": 903,
-                "module": "v9_3_archetypes",
-                "name": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
-                "short_name": "Rubric v9.3",
+                "engine_version": "v9.4",
+                "rubric_version": "v9.4",
+                "rubric_rank": 904,
+                "module": "v9_4_experimental",
+                "name": "✨ Rubric v9.4 — Submitter Context & Grounding (Production)",
+                "short_name": "Rubric v9.4",
                 "status": "production",
                 "is_default": True,
-                "description": "7 domain archetype lenses, domain-specific exemptions, and Hackathon Judge",
+                "description": "7 domain archetype lenses, submitter context weighting, grounding, and Hackathon Judge",
             }
         ]
 
@@ -64,6 +64,7 @@ def get_engine_info(engine_id: str) -> Optional[Dict[str, Any]]:
     alias_map = {
         "v8.0-test": "v8.0",
         "v9.0-test": "v9.0",
+        "v9.4-test": "v9.4",
     }
     key = alias_map.get(key, key)
     for eng in load_registry():

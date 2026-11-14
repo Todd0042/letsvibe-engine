@@ -3,31 +3,31 @@
   "engines": [
     {
       "id": "blend",
-      "engine_version": "v9.3",
-      "rubric_version": "v9.3",
-      "rubric_rank": 903,
-      "module": "v9_3_archetypes",
-      "name": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
-      "label": "✨ Rubric v9.3 — Archetypes & Domain Exemptions (Production)",
-      "short_name": "Rubric v9.3",
-      "status": "production",
-      "is_default": true,
-      "supports_questionnaire": true,
-      "description": "Evaluates real-world value, creativity, user journey, functionality, and UI/UX with 7 domain archetype lenses and exemptions."
-    },
-    {
-      "id": "v9.4-test",
       "engine_version": "v9.4",
       "rubric_version": "v9.4",
       "rubric_rank": 904,
       "module": "v9_4_experimental",
-      "name": "🧪 [TESTING] Rubric v9.4 — Experimental Next-Gen (Admin Only)",
-      "label": "🧪 [TESTING] Rubric v9.4 — Experimental Next-Gen (Admin Only)",
-      "short_name": "Rubric v9.4 (Test)",
+      "name": "✨ Rubric v9.4 — Submitter Context & Grounding (Production)",
+      "label": "✨ Rubric v9.4 — Submitter Context & Grounding (Production)",
+      "short_name": "Rubric v9.4",
+      "status": "production",
+      "is_default": true,
+      "supports_questionnaire": true,
+      "description": "Evaluates real-world value, creativity, user journey, functionality, and UI/UX with submitter context weighting, grounding checks, and 7 domain archetype lenses."
+    },
+    {
+      "id": "v9.3",
+      "engine_version": "v9.3",
+      "rubric_version": "v9.3",
+      "rubric_rank": 903,
+      "module": "v9_3_archetypes",
+      "name": "🕰️ [LEGACY] Rubric v9.3 — Archetypes & Domain Exemptions (Admin Only)",
+      "label": "🕰️ [LEGACY] Rubric v9.3 — Archetypes & Domain Exemptions (Admin Only)",
+      "short_name": "Rubric v9.3",
       "status": "testing",
       "is_default": false,
       "supports_questionnaire": true,
-      "description": "Sandbox engine for testing prompt refinements, scoring adjustments, and submitter context weighting."
+      "description": "Previous production rubric with 7 domain archetype lenses and exemptions."
     },
     {
       "id": "v9.2",
