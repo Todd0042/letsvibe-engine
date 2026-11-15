@@ -274,27 +274,44 @@ def _evaluate(
         "project_profile": profile_key,
         "rubric_family": rubric_family,
     }
+    scoring_prompt = prompts.build_scoring_prompt(
+        packed_repo.repo_name,
+        profile_key,
+        profile_data,
+        rubric_family,
+        ctx_json,
+        batch_findings,
+        proven,
+        hostile,
+        det_summary,
+    )
     scoring_json = llama.generate_json(
         stage="scoring_checklist",
         system_prompt=prompts.SYSTEM_AUDITOR,
-        user_prompt=prompts.build_scoring_prompt(
-            packed_repo.repo_name,
-            profile_key,
-            profile_data,
-            rubric_family,
-            ctx_json,
-            batch_findings,
-            proven,
-            hostile,
-            det_summary,
-        ),
+        user_prompt=scoring_prompt,
         max_tokens=1800,
         temperature=0.0,
         seed=0,
     )
-    timing["scoring_llm_sec"] = round(time.perf_counter() - t0, 2)
-
     checklist = scoring_json.get("checklist") if isinstance(scoring_json.get("checklist"), dict) else {}
+    required_cats = set(rubric.WEIGHTS.keys())
+    missing_cats = [c for c in required_cats if not isinstance(checklist.get(c), dict)]
+    if missing_cats:
+        retry_prompt = (
+            scoring_prompt
+            + f"\n\nCRITICAL: Your previous response omitted required checklist sections: {missing_cats}. "
+            + "You MUST include ALL 5 sections under `checklist`: value, functionality, creativity, ui_ux, journey."
+        )
+        scoring_json = llama.generate_json(
+            stage="scoring_checklist_retry",
+            system_prompt=prompts.SYSTEM_AUDITOR,
+            user_prompt=retry_prompt,
+            max_tokens=2000,
+            temperature=0.0,
+            seed=1,
+        )
+        checklist = scoring_json.get("checklist") if isinstance(scoring_json.get("checklist"), dict) else {}
+    timing["scoring_llm_sec"] = round(time.perf_counter() - t0, 2)
     scores = rubric.compute_all_scores(
         family=rubric_family,
         checklist=checklist,

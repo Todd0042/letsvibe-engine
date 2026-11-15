@@ -103,6 +103,7 @@ class LlamaMoeClient:
             "prompt": prompt,
             "n_predict": max_tokens,
             "temperature": temperature,
+            "cache_prompt": False,
             "stop": ["<|im_end|>", "<|endoftext|>"],
         }
         if seed is not None:
