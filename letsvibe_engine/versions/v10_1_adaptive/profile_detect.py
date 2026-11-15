@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 from letsvibe_engine.versions.v9_4_experimental.context import load_project_profiles
 
 CANONICAL_PROFILES = (
+    "library_or_sdk",
     "developer_tool_or_mcp",
     "interactive_game_or_simulation",
     "media_or_social_lounge",
@@ -19,9 +20,11 @@ CANONICAL_PROFILES = (
 )
 
 PROFILE_ALIASES = {
+    "library_or_sdk": "library_or_sdk",
+    "library": "library_or_sdk",
+    "sdk": "library_or_sdk",
     "developer_tool": "developer_tool_or_mcp",
     "cli_or_utility": "developer_tool_or_mcp",
-    "library_or_sdk": "developer_tool_or_mcp",
     "mcp_server": "developer_tool_or_mcp",
     "consumer_web_app": "web_productivity_app",
     "web_app": "web_productivity_app",
@@ -125,7 +128,25 @@ def extract_structural_signals(
         if re.search(rf"\b{re.escape(m)}\b", joined)
     ]
 
+    library_markers = [
+        m
+        for m in ("cmakelists.txt", "pyproject.toml", "setup.py", "cargo.toml", "package.json")
+        if m in bases
+    ]
+    if any(f.endswith((".h", ".hpp", ".d.ts")) for f in names):
+        library_markers.append("public_headers")
+    if re.search(r"\b(library|sdk|parser|grammar|lexer|package|module|api)\b", readme_l):
+        library_markers.append("library_readme")
+
     scores: Dict[str, int] = {k: 0 for k in CANONICAL_PROFILES if k != "unknown_or_general"}
+
+    # Library / SDK: packaging/headers/parser signals with NO UI templates and NO CLI parser
+    if library_markers and ui_templates == 0 and not cli_markers and not mobile_iot_markers and not game_markers:
+        scores["library_or_sdk"] += min(7, 2 * len(library_markers))
+    if re.search(r"\b(c\+\+ library|python library|rust crate|typescript library|parser generator|grammar library|sdk)\b", readme_l):
+        scores["library_or_sdk"] += 3
+    if ui_templates >= 2 or len(mobile_iot_markers) >= 2:
+        scores["library_or_sdk"] = 0
 
     # Developer Tool / CLI / MCP: strong CLI/MCP signals AND minimal/no GUI surface
     if cli_markers:
@@ -205,24 +226,31 @@ def resolve_project_profile(
     profiles_map = load_project_profiles()
 
     explicit_key = normalize_profile_key(explicit_profile)
-    if explicit_key and explicit_key in profiles_map:
-        return explicit_key, profiles_map[explicit_key], "explicit"
+    if explicit_key:
+        prof = profiles_map.get(explicit_key) or profiles_map.get("developer_tool_or_mcp", {})
+        return explicit_key, prof, "explicit"
 
     llm_key = normalize_profile_key(llm_profile)
     top_key = str(signals.get("structural_top") or "unknown_or_general")
     confidence = signals.get("structural_confidence")
 
-    if confidence == "high" and top_key in profiles_map:
-        # Only let LLM override if LLM picked a closely competing structural candidate (>= 3)
+    def _profile_data_for(k: str) -> Dict[str, Any]:
+        if k in profiles_map:
+            return profiles_map[k]
+        if k == "library_or_sdk":
+            return profiles_map.get("developer_tool_or_mcp", {})
+        return profiles_map.get("unknown_or_general", {})
+
+    if confidence == "high" and (top_key in profiles_map or top_key == "library_or_sdk"):
         cand_scores = signals.get("candidate_scores") or {}
-        if llm_key and llm_key in profiles_map and cand_scores.get(llm_key, 0) >= max(3, cand_scores.get(top_key, 0) - 1):
-            return llm_key, profiles_map[llm_key], "structural+llm_tiebreak"
-        return top_key, profiles_map[top_key], "structural_high_conf"
+        if llm_key and (llm_key in profiles_map or llm_key == "library_or_sdk") and cand_scores.get(llm_key, 0) >= max(3, cand_scores.get(top_key, 0) - 1):
+            return llm_key, _profile_data_for(llm_key), "structural+llm_tiebreak"
+        return top_key, _profile_data_for(top_key), "structural_high_conf"
 
-    if llm_key and llm_key in profiles_map and llm_key != "unknown_or_general":
-        return llm_key, profiles_map[llm_key], "llm_arbitrated"
+    if llm_key and (llm_key in profiles_map or llm_key == "library_or_sdk") and llm_key != "unknown_or_general":
+        return llm_key, _profile_data_for(llm_key), "llm_arbitrated"
 
-    if top_key in profiles_map:
-        return top_key, profiles_map[top_key], "structural_fallback"
+    if top_key in profiles_map or top_key == "library_or_sdk":
+        return top_key, _profile_data_for(top_key), "structural_fallback"
 
     return "unknown_or_general", profiles_map.get("unknown_or_general", {}), "fallback"

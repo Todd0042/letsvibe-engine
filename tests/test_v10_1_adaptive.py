@@ -87,3 +87,26 @@ def test_cli_adaptive_scoring_gives_full_credit_for_strong_cli():
     assert scores["value"] == 90.0
     assert scores["journey"] == 93.0
     assert rubric.overall(scores) == 95.6
+
+
+def test_library_or_sdk_detected_and_scored_without_gui_penalty():
+    files = {
+        "CMakeLists.txt": "cmake_minimum_required(VERSION 3.16)\nproject(winnow_grammar)\n",
+        "include/winnow/grammar.hpp": "#pragma once\nnamespace winnow { struct Grammar {}; }\n",
+        "src/parser.cpp": "int parse() { return 0; }\n",
+    }
+    signals = profile_detect.extract_structural_signals(files, readme_raw="A fast C++ parser and grammar library.")
+    key, _, _ = profile_detect.resolve_project_profile("auto", signals, "library_or_sdk")
+    assert key == "library_or_sdk"
+    assert rubric.rubric_family_for_profile(key) == "library_or_sdk"
+
+    checklist = {
+        "value": {"tier": "TIER_3_GENUINE_GAP_OR_HOOK", "is_default_prompt_clone": False, "verified_twists": ["zero-copy"]},
+        "functionality": {"core_flow": "WORKS_END_TO_END", "features_connected": "CONNECTED", "tells_user_about_problems": "CLEARLY", "confirms_success": "CLEARLY"},
+        "creativity": {"has_distinct_voice_or_craft": True, "clever_workflow_or_abstraction": True, "concept_depth": "COHESIVE", "mechanical_synergy": True},
+        "ui_ux": {"public_api_clarity": "CLEAR", "docs_and_examples": "CLEAR", "error_and_diagnostic_quality": "CLEAR", "packaging_and_composability": "WELL"},
+        "journey": {"launch_experience": "ONE_STEP_INSTALL", "integration_friction": "ONE_IMPORT_OR_CALL", "setup_burden": "NONE", "state_and_config": "AUTO_OR_STATELESS", "hostile_monetization": False},
+    }
+    scores = rubric.compute_all_scores("library_or_sdk", checklist, hostile_found=[])
+    assert scores["ui_ux"] == 100.0
+    assert scores["journey"] == 95.0

@@ -22,6 +22,8 @@ FACTOR_OF: Dict[str, str] = {
 
 
 def rubric_family_for_profile(profile_key: str) -> str:
+    if profile_key == "library_or_sdk":
+        return "library_or_sdk"
     if profile_key in ("developer_tool_or_mcp", "automation_script_or_pipeline"):
         return "cli_or_automation"
     if profile_key == "interactive_game_or_simulation":
@@ -57,6 +59,40 @@ SHARED_FUNCTIONALITY_POINTS = {
 }
 
 FAMILY_POINTS: Dict[str, Dict[str, Dict[str, Any]]] = {
+    "library_or_sdk": {
+        "value": SHARED_VALUE_POINTS,
+        "functionality": SHARED_FUNCTIONALITY_POINTS,
+        "creativity": {
+            "has_distinct_voice_or_craft": {True: 25, False: 0},
+            "clever_workflow_or_abstraction": {True: 25, False: 0},
+            "concept_depth": {
+                "STERILE_DEFAULT": 0,
+                "LIGHTLY_CRAFTED": 10,
+                "COHESIVE": 20,
+                "DISTINCTIVE": 30,
+            },
+            "mechanical_synergy": {True: 20, False: 0},
+        },
+        "ui_ux": {
+            "public_api_clarity": {"CLEAR": 30, "MIXED": 15, "OPAQUE": 0},
+            "docs_and_examples": {"CLEAR": 25, "BASIC": 14, "MISSING_OR_STALE": 0},
+            "error_and_diagnostic_quality": {"CLEAR": 25, "SOME": 13, "OPAQUE": 0},
+            "packaging_and_composability": {"WELL": 20, "ADEQUATELY": 12, "POORLY": 0},
+        },
+        "journey": {
+            "launch_experience": {
+                "RUNS_IMMEDIATELY": 35,
+                "ONE_STEP_INSTALL": 30,
+                "MANUAL_SETUP": 14,
+                "BRING_YOUR_OWN_KEY": 5,
+            },
+            "integration_friction": {"ONE_IMPORT_OR_CALL": 25, "A_FEW_STEPS": 14, "COMPLEX_SETUP": 0},
+            "setup_burden": {"NONE": 20, "LIGHT": 20, "MODERATE": 10, "HEAVY": 0},
+            "state_and_config": {"AUTO_OR_STATELESS": 20, "EXPLICIT_CONFIG": 14, "FRAGILE_OR_MANUAL": 0},
+            "hostile_monetization": {False: 0, True: -50},
+            "hostile_penalty": -50,
+        },
+    },
     "cli_or_automation": {
         "value": SHARED_VALUE_POINTS,
         "functionality": SHARED_FUNCTIONALITY_POINTS,

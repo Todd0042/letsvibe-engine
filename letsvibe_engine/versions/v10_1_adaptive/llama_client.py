@@ -25,6 +25,8 @@ def _strip_thinking_and_fences(text: str) -> str:
 
 def _parse_json_payload(raw_text: str) -> Dict[str, Any]:
     cleaned = _strip_thinking_and_fences(raw_text)
+    if cleaned.startswith("{{"):
+        cleaned = cleaned[1:].lstrip()
     try:
         parsed = json.loads(cleaned)
         if isinstance(parsed, dict):
@@ -32,12 +34,16 @@ def _parse_json_payload(raw_text: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end > start:
-        parsed = json.loads(cleaned[start : end + 1])
-        if isinstance(parsed, dict):
-            return parsed
+    decoder = json.JSONDecoder()
+    idx = cleaned.find("{")
+    while idx != -1:
+        try:
+            obj, _end = decoder.raw_decode(cleaned, idx)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+        idx = cleaned.find("{", idx + 1)
     raise ValueError(f"Expected JSON object from llama-server, got: {cleaned[:240]}")
 
 

@@ -44,7 +44,8 @@ def build_context_prompt(
 {dossier_md[:14000]}
 
 Choose `project_profile` as the single best fit from:
-- `developer_tool_or_mcp`: CLI utilities, MCP servers, developer SDKs/libraries, editor extensions (no primary GUI app).
+- `library_or_sdk`: Reusable libraries, parsers, grammars, SDKs, or packages imported by other code (no primary GUI or CLI app).
+- `developer_tool_or_mcp`: CLI utilities, MCP servers, developer tools, editor extensions (no primary GUI app).
 - `interactive_game_or_simulation`: 2D/3D games, canvas/pygame simulations, retro arcade apps.
 - `media_or_social_lounge`: Audio/video players, karaoke lounges, media normalizers, multi-device party apps.
 - `hardware_iot_or_mobile`: Android/iOS mobile apps, Raspberry Pi/Arduino/ESP32/OBD2 hardware controllers.
@@ -101,6 +102,25 @@ Return a JSON object with this exact schema:
 
 
 _FAMILY_CHECKLIST_SCHEMA: Dict[str, str] = {
+    "library_or_sdk": """    "creativity": {{
+      "has_distinct_voice_or_craft": true,
+      "clever_workflow_or_abstraction": false,
+      "concept_depth": "STERILE_DEFAULT | LIGHTLY_CRAFTED | COHESIVE | DISTINCTIVE",
+      "mechanical_synergy": true
+    }},
+    "ui_ux": {{
+      "public_api_clarity": "CLEAR | MIXED | OPAQUE",
+      "docs_and_examples": "CLEAR | BASIC | MISSING_OR_STALE",
+      "error_and_diagnostic_quality": "CLEAR | SOME | OPAQUE",
+      "packaging_and_composability": "WELL | ADEQUATELY | POORLY"
+    }},
+    "journey": {{
+      "launch_experience": "RUNS_IMMEDIATELY | ONE_STEP_INSTALL | MANUAL_SETUP | BRING_YOUR_OWN_KEY",
+      "integration_friction": "ONE_IMPORT_OR_CALL | A_FEW_STEPS | COMPLEX_SETUP",
+      "setup_burden": "NONE | LIGHT | MODERATE | HEAVY",
+      "state_and_config": "AUTO_OR_STATELESS | EXPLICIT_CONFIG | FRAGILE_OR_MANUAL",
+      "hostile_monetization": false
+    }}""",
     "cli_or_automation": """    "creativity": {{
       "has_distinct_voice_or_craft": true,
       "clever_workflow_or_abstraction": false,
