@@ -2,18 +2,46 @@
   "version": "2.0",
   "engines": [
     {
+      "id": "v10.1",
+      "engine_version": "v10.1",
+      "rubric_version": "v10.1",
+      "rubric_rank": 1010,
+      "module": "v10_1_adaptive",
+      "name": "🧪 [TESTING] Engine v10.1 — Adaptive Discrete Checklist (30B-A3B)",
+      "label": "🧪 [TESTING] Engine v10.1 — Adaptive Discrete Checklist (30B-A3B)",
+      "short_name": "Engine v10.1",
+      "status": "testing",
+      "is_default": false,
+      "supports_questionnaire": true,
+      "description": "Profile-adaptive discrete checklist on 30B-A3B (--cpu-moe, seed=0): deterministic Python scoring tailored for CLI/MCP, Games, Mobile/IoT, Media, and Web apps."
+    },
+    {
+      "id": "v10",
+      "engine_version": "v10",
+      "rubric_version": "v10",
+      "rubric_rank": 1005,
+      "module": "v10_cpu_moe",
+      "name": "✨ Engine v10 — Qwen3 30B-A3B (Production)",
+      "label": "✨ Engine v10 — Qwen3 30B-A3B (Production)",
+      "short_name": "Engine v10",
+      "status": "production",
+      "is_default": true,
+      "supports_questionnaire": true,
+      "description": "Unified 30.5B MoE (3B active) via CUDA llama.cpp --cpu-moe: evaluates real-world value, creativity, user journey, functionality, and UI/UX directly from code and dossier."
+    },
+    {
       "id": "blend",
       "engine_version": "v9.4",
       "rubric_version": "v9.4",
       "rubric_rank": 904,
       "module": "v9_4_experimental",
-      "name": "✨ Rubric v9.4 — Submitter Context & Grounding (Production)",
-      "label": "✨ Rubric v9.4 — Submitter Context & Grounding (Production)",
+      "name": "🕰️ [LEGACY] Rubric v9.4 — Submitter Context & Grounding (Admin Only)",
+      "label": "🕰️ [LEGACY] Rubric v9.4 — Submitter Context & Grounding (Admin Only)",
       "short_name": "Rubric v9.4",
-      "status": "production",
-      "is_default": true,
+      "status": "testing",
+      "is_default": false,
       "supports_questionnaire": true,
-      "description": "Evaluates real-world value, creativity, user journey, functionality, and UI/UX with submitter context weighting, grounding checks, and 7 domain archetype lenses."
+      "description": "Previous 7B/14B Ollama production rubric with submitter context weighting, grounding checks, and 7 domain archetype lenses."
     },
     {
       "id": "v9.3",
