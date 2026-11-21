@@ -20,17 +20,22 @@ from typing import Iterable
 CODE_EXT = r"py|pyi|ts|tsx|js|jsx|mjs|cjs|svelte|vue|rs|go|kt|kts|java|cpp|cc|cxx|c|h|hpp|cs|swift|rb|php|sh|lua|dart|zig"
 _FILE = re.compile(rf"(?<![\w/.-])((?:[\w.-]+/)*[\w.-]+\.(?:{CODE_EXT}))\b")
 # "line 12" / "lines 12" or "file.py:12" (a ":N" only counts right after a code file name: "127.0.0.1:11435" is a port).
-_LINE = re.compile(rf"\blines?\s+(\d{{1,6}})\b|\.(?:{CODE_EXT}):(\d{{1,6}})\b")
+_LINE = re.compile(rf"\blines?\s+(\d{{1,6}}(?:\s*(?:,|and|&|to|-|–)\s*\d{{1,6}})*)\b|\.(?:{CODE_EXT}):(\d{{1,6}})\b")
 _IDENT = re.compile(r"`([A-Za-z_][\w.:]*?)(?:\(\))?`")
 _NEGATION = re.compile(r"\b(missing|no|lacks?|lacking|without|absent|doesn't|does not|never)\b", re.I)
 REGION = 40  # lines after a function's start that count as "that function" for the "missing X" checks
+NEAR = 4  # lines from a mention of the claim's subject that count as "right there"
 
 # "missing X" claims: what counts as evidence that X is there.
 EVIDENCE: dict[str, tuple[re.Pattern, re.Pattern]] = {
+    "empty or missing input": (re.compile(r"\b(empty|blank|null|nil|none|missing file|nonexistent|doesn't exist|does not exist)\b", re.I),
+                               re.compile(r"isNullOrBlank|isNullOrEmpty|isBlank\(|isEmpty\(|== null|!= null|\bis None\b|"
+                                          r"\?: return|\.exists\(|if\s*\(\s*!\s*\w+|if not \w+|== nil|len\(\w+\) == 0")),
     "timeout": (re.compile(r"time-?outs?\b", re.I),
                 re.compile(r"timeout|Duration::from_(secs|millis)|setTimeout|wait_for\(|AbortSignal\.timeout|deadline", re.I)),
     "error handling": (re.compile(r"error[- ]handling|handle (the )?errors?|unhandled|exception handling", re.I),
                        re.compile(r"\btry\b|\bexcept\b|\bcatch\b|map_err|\.ok_or|Result<|\?;|if err != nil|"
+                                  r"if\s*\(\s*!\s*[\w.:>-]+|==\s*(nullptr|NULL)\b|"
                                   r"return Err\(|raise\b|\.error\(|ui\.error|logger?\.(error|warning)")),
     "validation": (re.compile(r"\bvalidat|\bsaniti[sz]|\bcheck(s|ed)? (the )?input", re.I),
                    re.compile(r"\.chars\(\)\.all|re\.(fullmatch|match)|\bmatch(es)?\(|isinstance\(|Field\(|"
@@ -47,11 +52,19 @@ class Dropped:
 
 
 _WORD = re.compile(r"\b([a-z][a-z0-9]*_[a-z0-9_]+|[a-z]+[A-Z][A-Za-z0-9]+)\b")  # snake_case / camelCase names
+# Class.method() / Class::method() / Class.method (a class name and a method), and "Class's ..." (a class name).
+_MEMBER = re.compile(r"\b([A-Z][A-Za-z0-9]+)(?:\.|::)([a-z_][A-Za-z0-9_]*)\b(?:\(\))?")
+_POSSESSIVE = re.compile(r"\b([A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+)'s\b")
+# Words that look like code but are ordinary product/tech words: never used to call a claim made up.
+_NOT_CODE = {"iOS", "macOS", "iPhone", "iPad", "eBay", "iCloud", "watchOS", "tvOS", "npm", "pnpm"}
 
 
 def _subjects(claim: str, idents: list[str]) -> list[str]:
     """What the claim is about: backticked identifiers plus snake_case/camelCase words."""
     out = idents + _WORD.findall(claim)  # whole names only: "`adb start-server`" mustn't match any start()/server()
+    for cls, member in _MEMBER.findall(claim):
+        out += [member, cls]
+    out += _POSSESSIVE.findall(claim)
     return list(dict.fromkeys(w for w in out if len(w) >= 3))
 
 
@@ -87,7 +100,10 @@ class RepoIndex:
             self._blob = "\n".join("\n".join(self.lines(p)) for p in code)
         return re.search(rf"(?<![\w]){re.escape(word)}(?![\w])", self._blob) is not None
 
-    _DEF = re.compile(r"\b(?:async\s+)?(?:def|fn|func|function|fun)\s+([A-Za-z_]\w*)")
+    _DEF = re.compile(r"\b(?:async\s+)?(?:def|fn|func|function|fun)\s+([A-Za-z_]\w*)"
+                      # C/C++/Java/C#/Kotlin-style: a return type, then [Class::]name( ... ) without a trailing ';'
+                      r"|^\s*(?:[\w<>\[\],*&]+\s+)+(?:\w+::)?([A-Za-z_]\w*)\s*\([^;]*$")
+    _KEYWORDS = {"if", "for", "while", "switch", "return", "catch", "else", "new", "sizeof", "delete", "throw"}
 
     def functions_matching(self, subjects: list[str], within: list[str], exact_only: bool) -> list[tuple[str, int, str, list[str]]]:
         """Function definitions whose name is a subject, or (inside the cited files only) contains one as a word part
@@ -100,7 +116,9 @@ class RepoIndex:
                 m = self._DEF.search(line)
                 if not m:
                     continue
-                name = m.group(1)
+                name = m.group(1) or m.group(2)
+                if name in self._KEYWORDS:
+                    continue
                 parts = set(re.split(r"_|(?<=[a-z])(?=[A-Z])", name.lower()))
                 if name.lower() in subs or (not exact_only and subs & parts):
                     body = [ls[i]]
@@ -121,7 +139,7 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
             return Dropped(claim, f"cites `{cited}`, which isn't in the repo")
         found += hits
 
-    nums = [int(a or b) for a, b in _LINE.findall(claim)]
+    nums = [int(n) for a, b in _LINE.findall(claim) for n in re.findall(r"\d+", a or b)]
     if found and nums:
         longest = max(len(repo.lines(p)) for p in found)
         bad = [n for n in nums if n > longest and longest]
@@ -130,9 +148,21 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
 
     idents = [i.split("::")[-1].split(".")[-1] for i in _IDENT.findall(claim)]
     idents = [i for i in idents if len(i) >= 3 and not re.fullmatch(r"\d+", i)]
-    for ident in idents:
-        if not repo.contains_word(ident):
-            return Dropped(claim, f"names `{ident}`, which appears nowhere in the code")
+    # A dotted word right after a file name is the file ("UserPrefs.h"), not Class.member.
+    no_files = _FILE.sub(" ", claim)
+    code_names = idents + [m for pair in _MEMBER.findall(no_files) for m in pair] + _POSSESSIVE.findall(no_files) \
+        + [w for w in _WORD.findall(no_files) if len(w) >= 5]
+    for name in dict.fromkeys(code_names):
+        if name in _NOT_CODE or len(name) < 3:
+            continue
+        if not repo.contains_word(name):
+            return Dropped(claim, f"names `{name}`, which appears nowhere in the code")
+
+    if found and re.search(r"\bduplicat", claim, re.I):
+        for name in dict.fromkeys(code_names):
+            occurrences = sum(len(re.findall(rf"(?<!\w){re.escape(name)}(?!\w)", "\n".join(repo.lines(p)))) for p in found)
+            if occurrences == 1:
+                return Dropped(claim, f"says `{name}` is duplicated, but it occurs once in {found[0]}")
 
     if not _NEGATION.search(claim):
         return None
@@ -148,6 +178,26 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
                 if evidence.search(line):
                     return Dropped(claim, f"says {concept} is missing, but {name}() in {rel}:{start + off} has it: "
                                           f"{line.strip()[:120]}")
+        # A thing named in a cited file but not as a function (`SPIFFS`, `ringBuf_`): the lines around each mention.
+        if found:
+            things = [w for w in re.findall(r"\b[A-Z][A-Z0-9_]{2,}\b", no_files) if w not in ("API", "URL", "UI", "JSON")] \
+                + code_names
+            def names_thing(line: str) -> bool:
+                return any(re.search(rf"(?<!\w){re.escape(t)}(?!\w)", line) for t in things)
+            # Best evidence first: a line that handles the thing itself (`if (!SPIFFS.begin(true)) return;`) ...
+            for rel in found:
+                for j, line in enumerate(repo.lines(rel)):
+                    if names_thing(line) and evidence.search(line):
+                        return Dropped(claim, f"says {concept} is missing, but {rel}:{j + 1} has it: {line.strip()[:120]}")
+            # ... then a line right after a mention of it.
+            for rel in found:
+                ls = repo.lines(rel)
+                for i, line in enumerate(ls):
+                    if not names_thing(line):
+                        continue
+                    for j in range(i, min(len(ls), i + NEAR)):
+                        if evidence.search(ls[j]):
+                            return Dropped(claim, f"says {concept} is missing, but {rel}:{j + 1} has it: {ls[j].strip()[:120]}")
     return None
 
 

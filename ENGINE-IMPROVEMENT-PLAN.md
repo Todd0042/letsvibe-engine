@@ -38,7 +38,11 @@ each step, so whoever continues picks up from the last tick. **Planning document
 ## Steps
 
 ### 1. No-GPU fixes (letsvibe analyzers + engine rubric)
-- [x] **1a. Claim verifier.** (done: v10_4_verified/verify.py, tests/test_v10_4_verify.py; branch engine-v10.4) For each LLM weakness that names a file / line / function / identifier or says
+- [x] **1a. Claim verifier.** (done: v10_4_verified/verify.py, tests/test_v10_4_verify.py; branch engine-v10.4)
+      Real-report check (46 complaints from the 5 test repos' v10.3 reports, at the graded commits): first version
+      dropped 1, wrongly (a port read as a line number). Improved to read how reports really name code
+      (Class.method(), Class::method(), Class's, line lists, C++/Kotlin/Java definitions, a subject named in a cited
+      file) -> drops 3, all confirmed false by reading the code, none true. tests/test_v10_4_verify_real.py keeps them. For each LLM weakness that names a file / line / function / identifier or says
       something is "missing": check the repo (file exists, line in range, identifier present, the "missing" thing is
       really absent: e.g. grep for timeout/notification/handler near the cited code). Drop or mark unverified claims
       before they reach the report. Log what was dropped (engine log) for review.
