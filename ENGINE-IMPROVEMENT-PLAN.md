@@ -25,10 +25,20 @@ each step, so whoever continues picks up from the last tick. **Planning document
 - 6 of 9 LLM weaknesses across the reports were false (cited lines that don't exist; "missing" validation/timeout/
   notification/error handling that exists). Functionality scored 100 while listing 3 weaknesses.
 
+## Working rules (Todd, 2026-11-21)
+- Branch `engine-v10.4` (letsvibe-engine) and a matching branch in letsvibe for analyzer/site changes; never main
+  until everything is verified. A commit per sub-step; a commit + push per milestone.
+- Engine version: `v10_4_verified`, a copy of v10.3 with identical prompts, registered as status "testing"
+  (v10.3 stays production/default).
+- Test repos (already graded by v10.3, so their v10.3 reports are the baseline; expand later, step 3 is for fairness):
+  Todd0042/VibeBuilder-IDE-public (py/ts/rs, known false claims), keywan-ghadami/winnow-grammar (Rust, external),
+  Todd0042/letsvibe-reality-check (py, small), Todd0042/mx5-dash (C++, high code health),
+  Todd0042/echoes-of-logos (Kotlin, low code health / many findings).
+
 ## Steps
 
 ### 1. No-GPU fixes (letsvibe analyzers + engine rubric)
-- [ ] **1a. Claim verifier.** For each LLM weakness that names a file / line / function / identifier or says
+- [x] **1a. Claim verifier.** (done: v10_4_verified/verify.py, tests/test_v10_4_verify.py; branch engine-v10.4) For each LLM weakness that names a file / line / function / identifier or says
       something is "missing": check the repo (file exists, line in range, identifier present, the "missing" thing is
       really absent: e.g. grep for timeout/notification/handler near the cited code). Drop or mark unverified claims
       before they reach the report. Log what was dropped (engine log) for review.
