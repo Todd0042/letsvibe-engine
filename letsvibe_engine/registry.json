@@ -13,7 +13,8 @@
       "status": "testing",
       "is_default": false,
       "supports_questionnaire": true,
-      "description": "v10.3 plus a claim checker: AI weaknesses that the repo's own code disproves (missing file, impossible line, unknown identifier, or a 'missing' timeout/validation/error handling the cited function clearly has) are dropped and logged."
+      "description": "v10.3 plus a claim checker: AI weaknesses that the repo's own code disproves (missing file, impossible line, unknown identifier, or a 'missing' timeout/validation/error handling the cited function clearly has) are dropped and logged.",
+      "ingest_rules": "owned-code-v2"
     },
     {
       "id": "v10.3",
