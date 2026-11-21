@@ -8,7 +8,7 @@ from .api import (
     run_engine,
 )
 
-__version__ = "9.3.0"
+__version__ = "10.1.0"
 __all__ = [
     "get_available_engines",
     "get_engine_info",

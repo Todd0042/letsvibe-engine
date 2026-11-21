@@ -35,8 +35,8 @@ def rubric_family_for_profile(profile_key: str) -> str:
 SHARED_VALUE_POINTS = {
     "tier": {
         "TIER_0_BROKEN_OR_SHELL": 0,
-        "TIER_1_GENERIC_CLONE": 18,
-        "TIER_2_ITERATIVE_NICHE": 42,
+        "TIER_1_GENERIC_CLONE": 12,
+        "TIER_2_ITERATIVE_NICHE": 30,
         "TIER_3_GENUINE_GAP_OR_HOOK": 60,
     },
     "is_default_prompt_clone": {False: 20, True: 0},
@@ -142,21 +142,23 @@ FAMILY_POINTS: Dict[str, Dict[str, Dict[str, Any]]] = {
             "mechanical_synergy": {True: 20, False: 0},
         },
         "ui_ux": {
-            "hud_and_controls_clarity": {"CLEAR": 30, "MIXED": 15, "CLUTTERED": 0},
-            "visual_audio_cohesion": {"CONSISTENT": 25, "MOSTLY_CONSISTENT": 15, "PATCHWORK": 0},
-            "input_and_state_feedback": {"CLEAR": 25, "SOME": 13, "NONE": 0},
-            "fits_its_device": {"WELL": 20, "ADEQUATELY": 12, "POORLY": 0},
+            "hud_and_controls_clarity": {"CLEAR": 25, "MIXED": 12, "CLUTTERED": 0},
+            "visual_audio_cohesion": {"CONSISTENT": 20, "MOSTLY_CONSISTENT": 10, "PATCHWORK": 0},
+            "input_and_state_feedback": {"CLEAR": 20, "SOME": 10, "NONE": 0},
+            "fits_its_device": {"WELL": 15, "ADEQUATELY": 8, "POORLY": 0},
+            "visual_polish": {"POLISHED": 20, "FUNCTIONAL": 10, "BAREBONES": 0},
         },
         "journey": {
             "launch_experience": {
-                "RUNS_IMMEDIATELY": 35,
-                "ONE_STEP_INSTALL": 26,
-                "MANUAL_SETUP": 12,
+                "RUNS_IMMEDIATELY": 20,
+                "ONE_STEP_INSTALL": 16,
+                "MANUAL_SETUP": 8,
                 "BRING_YOUR_OWN_KEY": 0,
             },
-            "navigation_friction": {"STRAIGHT_TO_CORE": 25, "A_FEW_STEPS": 13, "BURIED": 0},
-            "setup_burden": {"NONE": 20, "LIGHT": 20, "MODERATE": 10, "HEAVY": 0},
-            "state_and_save": {"AUTO_SAVE": 20, "NOT_NEEDED": 20, "MANUAL_SAVE": 14, "NO_SAVE": 0},
+            "navigation_friction": {"STRAIGHT_TO_CORE": 20, "A_FEW_STEPS": 10, "BURIED": 0},
+            "setup_burden": {"NONE": 10, "LIGHT": 10, "MODERATE": 5, "HEAVY": 0},
+            "state_and_save": {"AUTO_SAVE": 20, "MANUAL_SAVE": 14, "NOT_NEEDED": 8, "NO_SAVE": 0},
+            "onboarding_and_controls_help": {"CLEAR": 30, "BASIC": 12, "NONE": 0},
             "hostile_monetization": {False: 0, True: -50},
             "hostile_penalty": -50,
         },
@@ -256,6 +258,15 @@ def score_category(
             pts += round(field_max * 0.5)
 
     if cat == "value":
+        is_clone = _coerce_bool(answers.get("is_default_prompt_clone")) is True
+        if is_clone:
+            # Cap tier points at TIER_1_GENERIC_CLONE if marked as a default/classic clone
+            raw_tier = str(answers.get("tier") or "").strip().upper()
+            tier_pts = table_map["tier"].get(raw_tier, 0)
+            clone_cap = table_map["tier"]["TIER_1_GENERIC_CLONE"]
+            if tier_pts > clone_cap:
+                pts -= (tier_pts - clone_cap)
+
         maxp += table_map["verified_twist_max"]
         twists = answers.get("verified_twists")
         if isinstance(twists, list):
@@ -265,6 +276,8 @@ def score_category(
                 twist_cnt = max(0, min(4, int(answers.get("verified_twists_count") or 0)))
             except (TypeError, ValueError):
                 twist_cnt = 0
+        if is_clone:
+            twist_cnt = min(1, twist_cnt)
         pts += min(table_map["verified_twist_max"], twist_cnt * table_map["verified_twist_each"])
 
     if cat == "functionality" and proven_problems_count > 0:
@@ -280,7 +293,14 @@ def score_category(
 
     if maxp <= 0:
         return 50.0
-    return round(max(0.0, min(100.0, pts * 100.0 / maxp)), 1)
+    score = round(max(0.0, min(100.0, pts * 100.0 / maxp)), 1)
+    if cat == "ui_ux" and family == "game_or_sim":
+        polish = str(answers.get("visual_polish") or "").strip().upper()
+        if polish == "BAREBONES":
+            score = min(score, 40.0)
+        elif polish == "FUNCTIONAL":
+            score = min(score, 68.0)
+    return score
 
 
 def compute_all_scores(
@@ -303,6 +323,11 @@ def compute_all_scores(
             lines_of_code=lines_of_code,
             profile_data=profile_data,
         )
+    if family == "game_or_sim":
+        func = checklist.get("functionality") if isinstance(checklist.get("functionality"), dict) else {}
+        core_flow = str(func.get("core_flow") or "").strip().upper()
+        if core_flow in ("MOSTLY_WORKS", "PARTLY_BUILT", "SHELL_OR_PLACEHOLDER"):
+            out["journey"] = min(out["journey"], 70.0)
     return out
 
 

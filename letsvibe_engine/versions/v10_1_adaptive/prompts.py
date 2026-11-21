@@ -150,13 +150,15 @@ _FAMILY_CHECKLIST_SCHEMA: Dict[str, str] = {
       "hud_and_controls_clarity": "CLEAR | MIXED | CLUTTERED",
       "visual_audio_cohesion": "CONSISTENT | MOSTLY_CONSISTENT | PATCHWORK",
       "input_and_state_feedback": "CLEAR | SOME | NONE",
-      "fits_its_device": "WELL | ADEQUATELY | POORLY"
+      "fits_its_device": "WELL | ADEQUATELY | POORLY",
+      "visual_polish": "POLISHED | FUNCTIONAL | BAREBONES"
     }},
     "journey": {{
       "launch_experience": "RUNS_IMMEDIATELY | ONE_STEP_INSTALL | MANUAL_SETUP | BRING_YOUR_OWN_KEY",
       "navigation_friction": "STRAIGHT_TO_CORE | A_FEW_STEPS | BURIED",
       "setup_burden": "NONE | LIGHT | MODERATE | HEAVY",
-      "state_and_save": "AUTO_SAVE | NOT_NEEDED | MANUAL_SAVE | NO_SAVE",
+      "state_and_save": "AUTO_SAVE | MANUAL_SAVE | NOT_NEEDED | NO_SAVE",
+      "onboarding_and_controls_help": "CLEAR | BASIC | NONE",
       "hostile_monetization": false
     }}""",
     "gui_or_general": """    "creativity": {{
@@ -176,7 +178,8 @@ _FAMILY_CHECKLIST_SCHEMA: Dict[str, str] = {
       "launch_experience": "RUNS_IMMEDIATELY | ONE_STEP_INSTALL | MANUAL_SETUP | BRING_YOUR_OWN_KEY",
       "navigation_friction": "STRAIGHT_TO_CORE | A_FEW_STEPS | BURIED",
       "setup_burden": "NONE | LIGHT | MODERATE | HEAVY",
-      "state_and_save": "AUTO_SAVE | NOT_NEEDED | MANUAL_SAVE | NO_SAVE",
+      "state_and_save": "AUTO_SAVE | MANUAL_SAVE | NOT_NEEDED | NO_SAVE",
+      "onboarding_and_controls_help": "CLEAR | BASIC | NONE",
       "hostile_monetization": false
     }}""",
 }
@@ -203,7 +206,21 @@ Domain Lenses:
 IMPORTANT RULES:
 - Do NOT output numeric scores. Python computes all 0-100 scores deterministically from your discrete enum/boolean choices.
 - Pick the single exact enum string (not the pipe-separated list) or boolean for every field, grounded in the verified code and dossier evidence below.
-- `verified_twists`: list up to 4 concrete capabilities/twists that clearly go beyond a basic boilerplate template (empty list if none).
+- `verified_twists`: list up to 4 genuinely uncommon or inventive capabilities/twists (NOT standard genre staples like screen wraparound, waves/bosses, powerups, retro SFX synthesis, health bars, or basic menus). Use `[]` for standard implementations.
+
+CALIBRATION & DISQUALIFIER RULES (follow strictly):
+- `value.tier` & `is_default_prompt_clone`:
+  - `TIER_0_BROKEN_OR_SHELL`: Broken, unrunnable, or mostly stub/placeholder.
+  - `TIER_1_GENERIC_CLONE` + `is_default_prompt_clone: true`: MUST be used for any classic arcade/tutorial/prompt staple (e.g. Asteroids/space shooter, Snake, Pong, Tetris, Todo, basic CRUD, calculator). Even if it adds standard genre/hobby features (bosses, powerups, toroidal wraparound, procedural sine/square SFX or music scripts, particle trails, health bars), it is STILL `TIER_1_GENERIC_CLONE` with `is_default_prompt_clone: true` and `verified_twists: []`.
+  - `TIER_2_ITERATIVE_NICHE`: Only for apps solving a real practical workflow/niche problem, OR games with genuinely original core mechanics and cohesive commercial-style polish.
+  - `TIER_3_GENUINE_GAP_OR_HOOK`: Original, high-utility product or deeply crafted experience filling a real gap with standout execution.
+- `functionality`:
+  - Disqualify `WORKS_END_TO_END` if there are incomplete feature templates/TODOs (e.g. unfinished boss/level templates), missing error handling for core asset/IO paths, or missing VFX/feedback for implemented mechanics (use `MOSTLY_WORKS` or `PARTLY_BUILT`).
+  - Disqualify `CONNECTED` if incomplete/unused templates or loose ends exist (use `SOME_LOOSE_ENDS`).
+- `ui_ux`:
+  - Disqualify `CLEAR` / `CONSISTENT` / `WELL` if debug/developer text leaks on screen (e.g. `'Glow path:'`), hardcoded placeholder colors or resizing bugs appear, key events lack VFX, or visuals are primitive shapes/dots on a plain black background. In those cases, pick `MIXED` / `CLUTTERED`, `MOSTLY_CONSISTENT` / `PATCHWORK`, `SOME`, and `BAREBONES` for `visual_polish`.
+- `journey`:
+  - Disqualify `STRAIGHT_TO_CORE` if UI resizing bugs, clunky menus, or missing controls/onboarding help disrupt flow (use `A_FEW_STEPS`, and `BASIC` or `NONE` for `onboarding_and_controls_help`).
 
 --- PROJECT CONTEXT ---
 {json.dumps(context_json, indent=2)[:4500]}
@@ -225,8 +242,8 @@ Return a JSON object with this exact schema:
   "checklist": {{
     "value": {{
       "tier": "TIER_0_BROKEN_OR_SHELL | TIER_1_GENERIC_CLONE | TIER_2_ITERATIVE_NICHE | TIER_3_GENUINE_GAP_OR_HOOK",
-      "is_default_prompt_clone": false,
-      "verified_twists": ["short concrete twist grounded in code"]
+      "is_default_prompt_clone": true,
+      "verified_twists": []
     }},
     "functionality": {{
       "core_flow": "WORKS_END_TO_END | MOSTLY_WORKS | PARTLY_BUILT | SHELL_OR_PLACEHOLDER",

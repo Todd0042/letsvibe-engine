@@ -14,17 +14,23 @@ PROFILES_PATH = Path(__file__).resolve().parent / "profiles" / "project_profiles
 
 def rubric_version_rank(version: Optional[str]) -> int:
     """
-    Converts a rubric version string (e.g. 'v9.3', 'v9', 'v8', 'v1') into an integer rank
-    so SQLite and Python can sort reports newest-engine-first (v9.3 -> 903, v9.0/v9 -> 900, v8 -> 800, v1 -> 100).
+    Converts a rubric version string (e.g. 'v10', 'v10a', 'v9.3', 'v9', 'v1') into an integer rank
+    so SQLite and Python can sort reports newest-engine-first.
     """
     if not version:
         return 0
     s = str(version).strip().lower()
+    if s == "v10a":
+        return 1000
     m = re.match(r"^v?(\d+)(?:\.(\d+))?", s)
     if not m:
         return 0
     major = int(m.group(1))
     minor = int(m.group(2) or 0)
+    if major == 10 and minor == 0 and not s.endswith("a"):
+        return 1005
+    if major == 10 and minor >= 1:
+        return 1005 + minor * 5
     return major * 100 + minor
 
 
