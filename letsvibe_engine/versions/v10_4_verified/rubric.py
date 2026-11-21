@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from typing import Any, Dict, List, Optional, Tuple
 
 WEIGHTS: Dict[str, float] = {
@@ -309,6 +311,20 @@ def score_category(
     return score
 
 
+_KIND_OF_LABEL = {"oversized file(s)": ("oversized file",), "oversized/complex function(s)": ("oversized function",),
+                  "repeated 10-line": ("duplicated code",), "swallowed error(s)": ("swallowed error",),
+                  "unused file(s)": ("unused file", "unused route")}
+
+
+def _where(findings: List[Dict[str, Any]], label: str, limit: int = 3) -> str:
+    """'a.py:12, b.ts:40 (+5 more)': where to start fixing."""
+    kinds = next((k for prefix, k in _KIND_OF_LABEL.items() if label.startswith(prefix)), ())
+    hits = [f for f in findings if f.get("kind") in kinds and f.get("file")]
+    spots = [f"{f['file']}:{f['line']}" if f.get("line") else str(f["file"]) for f in hits[:limit]]
+    more = f" (+{len(hits) - limit} more)" if len(hits) > limit else ""
+    return ", ".join(spots) + more
+
+
 def score_code_health(
     metrics: Any,
     maintainer_findings: List[Dict[str, Any]],
@@ -344,31 +360,32 @@ def score_code_health(
         score -= pen
         weaknesses.append(f"Deeply nested peak function (Max CCN {max_ccn})")
 
-    if oversized_files > 0:
-        score -= min(16.0, oversized_files * 4.0)
-        weaknesses.append(f"{oversized_files} oversized file(s) mixing responsibilities")
-    else:
-        strengths.append("No oversized monolith files flagged")
+    # v10.4: findings are judged by density (per 1,000 lines of code), on a smooth curve towards the same maximum
+    # penalty v10.3 capped at: a few findings in a big codebase cost little, every fix moves the score a little,
+    # and a small and a large repo with the same habits score alike. (v10.3 capped counts: 6 swallowed errors in
+    # 600 lines and in 36,000 cost the same 18 points, and fixes past the cap changed nothing.)
+    kloc = max(0.5, float(getattr(metrics, "total_loc", 0) or 0) / 1000.0)
 
-    if oversized_funcs > 0:
-        score -= min(15.0, oversized_funcs * 3.0)
-        weaknesses.append(f"{oversized_funcs} oversized/complex function(s)")
+    def density_penalty(n: int, cap: float, scale: float) -> tuple[float, float]:
+        # d / (d + scale): rises quickly for the first findings, keeps rising (never flat) as they pile up, so even a
+        # messy repo sees every fix; never reaches the cap.
+        d = n / kloc
+        return cap * d / (d + scale), d
 
-    if duplicated_blocks > 1:
-        score -= min(16.0, (duplicated_blocks - 1) * 4.0)
-        weaknesses.append(f"{duplicated_blocks} repeated 10-line code block(s)")
-    elif duplicated_blocks == 0:
-        strengths.append("No 10-line duplicated logic blocks detected")
-
-    if swallowed_errors > 0:
-        score -= min(18.0, swallowed_errors * 3.0)
-        weaknesses.append(f"{swallowed_errors} swallowed error(s) hiding failures silently")
-    else:
-        strengths.append("No silent swallowed-error blocks flagged")
-
-    if dead_code > 0:
-        score -= min(12.0, dead_code * 3.0)
-        weaknesses.append(f"{dead_code} unused file(s) or unwired route(s)")
+    for n, cap, scale, label, good in (
+        (oversized_files, 16.0, 0.13, "oversized file(s) mixing responsibilities", "No oversized monolith files flagged"),
+        (oversized_funcs, 15.0, 0.25, "oversized/complex function(s)", None),
+        (duplicated_blocks, 16.0, 0.13, "repeated 10-line code block(s)", "No 10-line duplicated logic blocks detected"),
+        (swallowed_errors, 18.0, 0.25, "swallowed error(s) hiding failures silently", "No silent swallowed-error blocks flagged"),
+        (dead_code, 12.0, 0.08, "unused file(s) or unwired route(s)", None),
+    ):
+        if n > 0:
+            pen, d = density_penalty(n, cap, scale)
+            score -= pen
+            where = _where(findings, label)
+            weaknesses.append(f"{n} {label} ({d:.1f} per 1,000 lines){': ' + where if where else ''}")
+        elif good:
+            strengths.append(good)
 
     final = round(max(0.0, min(100.0, score)), 1)
     parts = [

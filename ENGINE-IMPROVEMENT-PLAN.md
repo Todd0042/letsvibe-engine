@@ -46,7 +46,7 @@ each step, so whoever continues picks up from the last tick. **Planning document
       something is "missing": check the repo (file exists, line in range, identifier present, the "missing" thing is
       really absent: e.g. grep for timeout/notification/handler near the cited code). Drop or mark unverified claims
       before they reach the report. Log what was dropped (engine log) for review.
-- [ ] **1b. Code Health without caps.** Score by density (findings per 1,000 lines) on a smooth diminishing curve so
+- [x] **1b. Code Health without caps.** (done: density per 1,000 lines on cap*d/(d+s), never flat, tuned near Todd's chosen 'middle'; weaknesses name where to fix; dependencies never judged. 5 repos: VibeBuilder 60.5->64.0, echoes 20->31.9, reality-check 65.2->43.7 (small & dense), mx5 84->84 (C/C++ not scanned), winnow 34.5->43.9. OPEN: ingest's vendor rule wrongly drops squash-committed own components/ and lib/ code from LOC/CCN for ALL engines incl. live v10.3 - fix pending Todd's OK) Score by density (findings per 1,000 lines) on a smooth diminishing curve so
       every real fix moves the score a little; small and large repos are judged alike.
 - [x] **1c. Swallowed-error detector understands intent** (done: letsvibe branch engine-v10.4, scan(intent_aware=True); v10.4 uses it. Effect: VibeBuilder 36->27, tiki-karaoke 197->92, echoes 48->43. GAP: C/C++ isn't scanned at all (mx5-dash shows 0) — add later) (`letsvibe/analyzers/code_scan.py`): don't count narrow
       expected exceptions (BlockingIOError, ProcessLookupError, FileNotFoundError in cleanup, CancelledError,
