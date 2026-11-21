@@ -27,6 +27,7 @@ from letsvibe.core.models import (
 from letsvibe.evaluator.consensus import calculate_letter_grade
 from letsvibe.evaluator.pipeline import select_for_review
 from letsvibe.storage.identity import parse_repo_identity
+from letsvibe_engine.versions.v10_4_verified import verify as claim_verify
 from letsvibe_engine.versions.v9_3_archetypes import (
     cliche,
     complexity,
@@ -420,6 +421,19 @@ def _evaluate(
 
     solid_features = _str_list(scoring_json.get("top_solid_features"), limit=5)
     needs_work = _str_list(scoring_json.get("top_features_needing_work"), limit=5)
+
+    # v10.4: weaknesses the repo's own code disproves never reach the report (verify.py), logged with the evidence.
+    # Code Health's weaknesses are computed from the scan, not written by the model, so they aren't checked.
+    repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
+    dropped_claims = []
+    for fname, fe in factor_evals.items():
+        if fname == rubric.FACTOR_OF["code_health"]:
+            continue
+        fe.weaknesses, dropped = claim_verify.verify_claims(list(fe.weaknesses), repo_index)
+        dropped_claims += [{"factor": fname, "claim": d.claim, "reason": d.reason} for d in dropped]
+    needs_work, dropped = claim_verify.verify_claims(needs_work, repo_index)
+    dropped_claims += [{"factor": "top_features_needing_work", "claim": d.claim, "reason": d.reason} for d in dropped]
+    log.step("v10.4 claim check: dropped claims the code disproves", dropped_claims, limit=20000)
     next_steps = _str_list(scoring_json.get("pro_next_steps"), limit=5)
     top_strengths = [
         s
