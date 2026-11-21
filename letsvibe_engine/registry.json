@@ -2,6 +2,20 @@
   "version": "2.0",
   "engines": [
     {
+      "id": "v10.4",
+      "engine_version": "v10.4",
+      "rubric_version": "v10.4",
+      "rubric_rank": 1030,
+      "module": "v10_4_verified",
+      "name": "Engine v10.4 — Verified Claims (testing)",
+      "label": "Engine v10.4 — Verified Claims (testing)",
+      "short_name": "Engine v10.4",
+      "status": "testing",
+      "is_default": false,
+      "supports_questionnaire": true,
+      "description": "v10.3 plus a claim checker: AI weaknesses that the repo's own code disproves (missing file, impossible line, unknown identifier, or a 'missing' timeout/validation/error handling the cited function clearly has) are dropped and logged."
+    },
+    {
       "id": "v10.3",
       "engine_version": "v10.3",
       "rubric_version": "v10.3",
