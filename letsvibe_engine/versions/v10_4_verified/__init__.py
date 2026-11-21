@@ -7,6 +7,7 @@ deterministic discrete checklist scoring, adapted per detected project profile
 
 from __future__ import annotations
 
+import inspect
 import os
 import time
 from datetime import datetime
@@ -142,7 +143,13 @@ def _evaluate(
     emit("Building app dossier and scanning code...", 18)
     data = dossier.build(Path(packed_repo.source_path))
     data["repo"] = packed_repo.repo_name
-    found = code_scan(Path(packed_repo.source_path))
+    # v10.4: intent-aware swallowed-error rules (expected exceptions, explained or visibly logged handling don't count;
+    # Rust and Go are scanned). An older letsvibe analyzer without them falls back to the original rules, said in the log.
+    if "intent_aware" in inspect.signature(code_scan).parameters:
+        found = code_scan(Path(packed_repo.source_path), intent_aware=True)
+    else:
+        found = code_scan(Path(packed_repo.source_path))
+        log.step("note", "letsvibe's code_scan has no intent-aware rules yet (deploy letsvibe engine-v10.4): original rules used")
     in_repo_host_ctx = discover_in_repo_host_headers(Path(packed_repo.source_path), packed_repo.files)
     proven = [
         f"{f['detail']} ({f['file']}" + (f" line {f['line']}" if f.get("line") else "") + ")"

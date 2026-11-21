@@ -44,7 +44,7 @@ each step, so whoever continues picks up from the last tick. **Planning document
       before they reach the report. Log what was dropped (engine log) for review.
 - [ ] **1b. Code Health without caps.** Score by density (findings per 1,000 lines) on a smooth diminishing curve so
       every real fix moves the score a little; small and large repos are judged alike.
-- [ ] **1c. Swallowed-error detector understands intent** (`letsvibe/analyzers/code_scan.py`): don't count narrow
+- [x] **1c. Swallowed-error detector understands intent** (done: letsvibe branch engine-v10.4, scan(intent_aware=True); v10.4 uses it. Effect: VibeBuilder 36->27, tiki-karaoke 197->92, echoes 48->43. GAP: C/C++ isn't scanned at all (mx5-dash shows 0) — add later) (`letsvibe/analyzers/code_scan.py`): don't count narrow
       expected exceptions (BlockingIOError, ProcessLookupError, FileNotFoundError in cleanup, CancelledError,
       WebSocketDisconnect, StopIteration...), catches with an explanatory comment, or handlers that log / report /
       re-raise / return an error. Add Rust (`let _ =`, `.ok();`, empty `Err(_) => {}`) and Go.
