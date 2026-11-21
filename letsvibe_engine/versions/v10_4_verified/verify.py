@@ -19,7 +19,8 @@ from typing import Iterable
 
 CODE_EXT = r"py|pyi|ts|tsx|js|jsx|mjs|cjs|svelte|vue|rs|go|kt|kts|java|cpp|cc|cxx|c|h|hpp|cs|swift|rb|php|sh|lua|dart|zig"
 _FILE = re.compile(rf"(?<![\w/.-])((?:[\w.-]+/)*[\w.-]+\.(?:{CODE_EXT}))\b")
-_LINE = re.compile(r"\blines?\s+(\d{1,6})\b|:(\d{1,6})\b")
+# "line 12" / "lines 12" or "file.py:12" (a ":N" only counts right after a code file name: "127.0.0.1:11435" is a port).
+_LINE = re.compile(rf"\blines?\s+(\d{{1,6}})\b|\.(?:{CODE_EXT}):(\d{{1,6}})\b")
 _IDENT = re.compile(r"`([A-Za-z_][\w.:]*?)(?:\(\))?`")
 _NEGATION = re.compile(r"\b(missing|no|lacks?|lacking|without|absent|doesn't|does not|never)\b", re.I)
 REGION = 40  # lines after a function's start that count as "that function" for the "missing X" checks

@@ -115,3 +115,11 @@ def test_folder_less_citations_and_missing_repo_files(tmp_path):
     repo = make_repo(tmp_path)
     assert check_claim("Missing error handling in `adb_connect` in tunnel.rs", repo) is not None  # folder omitted: found
     assert check_claim("No validation in `gui_start` in src/missing.rs", repo).reason.startswith("cites `src/missing.rs`")
+
+
+def test_ports_and_addresses_are_not_line_numbers(tmp_path):
+    """Found on a real v10.3 report (letsvibe-reality-check): a port after a colon was read as a line number."""
+    repo = make_repo(tmp_path)
+    claim = "No fallback for missing Llama server URL (uses default 127.0.0.1:11435) - server/net.py (line 3)"
+    assert check_claim(claim, repo) is None
+    assert check_claim("Crash at server/net.py:9000 on bad input", repo).reason.startswith("cites line 9000")
