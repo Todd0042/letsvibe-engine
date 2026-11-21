@@ -10,8 +10,9 @@ each step, so whoever continues picks up from the last tick. **Planning document
   making any slice worse (step 3). Fixes in steps 1-2 must be general (they help every repo equally).
 - **8 GB GPU.** Don't raise the model size, the 32k context, or add multi-run voting (OOM / CPU spill / 3x time).
   Anything GPU-heavy runs overnight through the host gpu-scheduler; cache everything except the LLM step.
-- **The live site isn't touched** until Todd deploys (blue-green Docker containers; watchdog). Todd has uncommitted
-  work in letsvibe (db.py, server.py, dashboard.html, ...) and here: commit or set it aside first, keep changes separate.
+- **The live site isn't touched** until Todd deploys (blue-green Docker containers; watchdog). Todd's earlier
+  uncommitted work is committed as WIP (letsvibe f06dd5d on gpu-scheduler-turns, engine 36fb9ff on main; local only,
+  both repos are public so pushing = publishing). Note: the live engine v10.3 (and v10.2) weren't in git until then.
 - New engine version number for any change that moves scores.
 
 ## Evidence that motivated this (VibeBuilder-IDE-public, three reports, v10.3)
