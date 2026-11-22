@@ -47,6 +47,10 @@ def _parse_json_payload(raw_text: str) -> Dict[str, Any]:
     raise ValueError(f"Expected JSON object from llama-server, got: {cleaned[:240]}")
 
 
+# The most a single answer may use: with a ~20k-token prompt it still fits the 32k context on the 8 GB card.
+MAX_ANSWER_TOKENS = 5000
+
+
 class LlamaMoeClient:
     """Calls a local CUDA + --cpu-moe llama-server over HTTP with deterministic defaults."""
 
@@ -98,6 +102,7 @@ class LlamaMoeClient:
 
         cur_user_prompt = user_prompt
         last_err: Optional[Exception] = None
+        n_predict = int(max_tokens)
         for attempt in range(3):
             self.check_guards()
             prompt = (
@@ -107,7 +112,7 @@ class LlamaMoeClient:
             )
             payload: Dict[str, Any] = {
                 "prompt": prompt,
-                "n_predict": max_tokens,
+                "n_predict": n_predict,
                 "temperature": temperature,
                 "cache_prompt": False,
                 "stop": ["<|im_end|>", "<|endoftext|>"],
@@ -128,8 +133,18 @@ class LlamaMoeClient:
                     raw = json.loads(resp.read().decode("utf-8"))
                 elapsed = round(time.perf_counter() - t0, 2)
                 content = "{" + (raw.get("content") or "")
-                parsed = _parse_json_payload(content)
                 timings = raw.get("timings") or {}
+                if raw.get("stop_type") == "limit":
+                    # Cut off at the token limit: the JSON is incomplete, and a salvaged piece of it would be graded
+                    # as if the rest were missing. Ask again with more room (the prompt still fits the 32k context).
+                    self.calls.append({"stage": stage, "attempt": attempt + 1, "elapsed_sec": elapsed,
+                                       "prompt_tokens": timings.get("prompt_n") or 0,
+                                       "completion_tokens": timings.get("predicted_n") or 0,
+                                       "finish_reason": "limit (cut off, asked again)"})
+                    last_err = RuntimeError(f"answer cut off at {n_predict} tokens")
+                    n_predict = min(int(n_predict * 1.6) + 200, MAX_ANSWER_TOKENS)
+                    continue
+                parsed = _parse_json_payload(content)
                 self.calls.append(
                     {
                         "stage": stage,

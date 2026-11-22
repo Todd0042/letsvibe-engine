@@ -140,7 +140,14 @@ class FakeModel:
                               "verified_twists": ["a", "b", "c", "d"]},
                     "functionality": {"core_flow": "WORKS_END_TO_END", "features_connected": "CONNECTED",
                                       "tells_user_about_problems": "CLEARLY", "confirms_success": "CLEARLY"},
-                    "creativity": {}, "journey": {}, "ui_ux": {},
+                    "creativity": {"depth_of_world_or_concept": "MODERATE", "has_distinct_voice": False,
+                                   "mechanical_synergy": "SOME", "subverts_standard_ui": False},
+                    "journey": {"launch_experience": "MANUAL_SETUP", "navigation_friction": "A_FEW_STEPS",
+                                "setup_burden": "MODERATE", "state_and_save": "AUTO_SAVE",
+                                "onboarding_and_controls_help": "NONE", "options_have_explanations": "FEW_OR_NONE",
+                                "first_time_intuitiveness": "NEEDS_TRIAL_AND_ERROR", "hostile_monetization": False},
+                    "ui_ux": {"clarity": "SOMEWHAT_CLEAR", "consistency": "MOSTLY", "feedback_while_working": "SOME",
+                              "fits_its_device": "OK", "accessibility_labels": "FEW"},
                 },
                 "factors": {
                     "value": {"strengths": ["Solves a real need"], "weaknesses": []},
@@ -199,3 +206,59 @@ def test_full_v10_4_run_on_a_realistic_repo(notes_app, tmp_path, monkeypatch):
     log = log_path.read_text()
     assert "dropped claims the code disproves" in log and FALSE_CLAIM in log and FALSE_NEEDS_WORK in log
     assert "scores capped" in log and json.dumps("functionality") in log
+
+
+class ForgetfulModel(FakeModel):
+    """Leaves User Journey and UI/UX out of the scoring answer, as the real model did on VibeBuilder-IDE-public
+    (and on tiki-karaoke and deciflux in production v10.3), and only gives them when asked for them alone."""
+    answers_when_asked = True
+
+    def generate_json(self, stage, system_prompt, user_prompt, **kwargs):
+        if stage.startswith("scoring_checklist"):
+            out = super().generate_json(stage, system_prompt, user_prompt, **kwargs)
+            for c in ("journey", "ui_ux"):
+                out["checklist"].pop(c)
+                out["factors"].pop(c)
+            return out
+        if stage == "scoring_missing_sections":
+            FakeModel.calls.append((stage, user_prompt))
+            assert "journey" in user_prompt and "ui_ux" in user_prompt and "value," not in user_prompt.split("ONLY")[1]
+            if not self.answers_when_asked:
+                return {"checklist": {}, "factors": {}}
+            return {"checklist": {"journey": {"launch_experience": "RUNS_IMMEDIATELY", "navigation_friction": "STRAIGHT_TO_CORE",
+                                              "setup_burden": "NONE", "state_and_save": "AUTO_SAVE"},
+                                  "ui_ux": {"clarity": "CLEAR", "consistency": "CONSISTENT"}},
+                    "factors": {"journey": {"strengths": ["Starts at once"], "weaknesses": []},
+                                "ui_ux": {"strengths": ["Clear"], "weaknesses": ["No dark mode"]}}}
+        return super().generate_json(stage, system_prompt, user_prompt, **kwargs)
+
+
+def _grade(notes_app, monkeypatch, model):
+    monkeypatch.setattr(engine, "LlamaMoeClient", model)
+    packed = RepositoryIngestor.ingest(str(notes_app), owned_code_v2=True)
+    metrics, _ = gather_metrics(packed)
+    return engine.evaluate(SimpleNamespace(), packed, str(notes_app), metrics,
+                           Classification(general_category="productivity", platforms=["web"]))
+
+
+def test_missing_sections_are_asked_for_not_graded_as_worst(notes_app, monkeypatch):
+    report = _grade(notes_app, monkeypatch, ForgetfulModel)
+    stages = [s for s, _ in FakeModel.calls]
+    assert stages.count("scoring_missing_sections") == 1 and stages.index("scoring_missing_sections") < stages.index("narrative")
+    journey, ui = report.factor_evaluations["user_journey"], report.factor_evaluations["ui_ux"]
+    # scored from the answers given when asked (v10.3 would have scored them as if every answer were the worst)
+    worst = _grade_worst(notes_app, monkeypatch)
+    assert journey.score > worst["journey"] and ui.score > worst["ui_ux"]
+    assert ui.weaknesses == ["No dark mode"] and journey.strengths == ["Starts at once"]
+
+
+def _grade_worst(notes_app, monkeypatch):
+    return {c: rubric.compute_all_scores(family="gui_or_general", checklist={}, hostile_found=[])[c] for c in ("journey", "ui_ux")}
+
+
+def test_a_section_never_answered_stops_the_grading(notes_app, monkeypatch):
+    class NeverAnswers(ForgetfulModel):
+        answers_when_asked = False
+
+    with pytest.raises(engine.IncompleteScoring, match="journey, ui_ux"):
+        _grade(notes_app, monkeypatch, NeverAnswers)

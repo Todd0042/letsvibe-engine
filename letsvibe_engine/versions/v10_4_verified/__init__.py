@@ -47,6 +47,10 @@ MAX_BATCHES = int(os.environ.get("LETSVIBE_V10_MAX_BATCHES", "6"))
 TIME_LIMIT_MIN = float(os.environ.get("LETSVIBE_TIME_LIMIT_MIN", "60"))
 
 
+class IncompleteScoring(RuntimeError):
+    """The model's scoring answer is missing whole sections even after asking for them: the grading stops."""
+
+
 def _platform_note(classification: Any) -> str:
     plats = ", ".join(getattr(classification, "platforms", []) or [])
     dev = getattr(classification, "device_profile", "") or ""
@@ -355,6 +359,32 @@ def _evaluate(
             seed=1,
         )
         checklist = scoring_json.get("checklist") if isinstance(scoring_json.get("checklist"), dict) else {}
+    # v10.4: a section that is still missing is asked for on its own (a short answer that can't be cut off). If the
+    # model still doesn't give it, stop: a missing section must never be graded as if every answer were the worst.
+    missing_cats = [c for c in sorted(required_cats) if not isinstance(checklist.get(c), dict) or not checklist.get(c)]
+    if missing_cats:
+        log.step("v10.4 scoring answer incomplete: asking only for the missing sections", missing_cats)
+        part = llama.generate_json(
+            stage="scoring_missing_sections",
+            system_prompt=prompts.SYSTEM_AUDITOR,
+            user_prompt=scoring_prompt + "\n\nAnswer ONLY these sections, in the same schema: "
+            + ", ".join(missing_cats) + '. Return {"checklist": {<only those>}, "factors": {<only those>}}.',
+            max_tokens=1600,
+            temperature=0.0,
+            seed=2,
+        )
+        for key in ("checklist", "factors"):
+            got = part.get(key) if isinstance(part.get(key), dict) else {}
+            block = scoring_json.setdefault(key, {}) if isinstance(scoring_json.get(key), dict) else {}
+            scoring_json[key] = block
+            for c in missing_cats:
+                if isinstance(got.get(c), dict) and got.get(c):
+                    block[c] = got[c]
+        checklist = scoring_json.get("checklist") or {}
+        still = [c for c in missing_cats if not isinstance(checklist.get(c), dict) or not checklist.get(c)]
+        if still:
+            raise IncompleteScoring(f"the model never answered the {', '.join(still)} checklist; not graded rather "
+                                    f"than scored as if every answer were the worst")
     timing["scoring_llm_sec"] = round(time.perf_counter() - t0, 2)
     ch_score, ch_summary, ch_strengths, ch_weaknesses = rubric.score_code_health(
         metrics, found.get("maintainer") or []
