@@ -439,5 +439,12 @@ def compute_all_scores(
     return out
 
 
+def cap_for_weaknesses(n: int) -> float:
+    """v10.4 1d: the most a factor can score while n (verified) weaknesses are still listed against it: 100 with none,
+    95 with one, a point less for each more, never below 90. A report can't call something perfect and then list
+    what's wrong with it; the cap stays small because the rubric's checklist already scored the substance."""
+    return 100.0 if n <= 0 else max(90.0, 96.0 - n)
+
+
 def overall(scores: Dict[str, float]) -> float:
     return round(sum(scores[c] * WEIGHTS[c] for c in WEIGHTS) / 100.0, 1)

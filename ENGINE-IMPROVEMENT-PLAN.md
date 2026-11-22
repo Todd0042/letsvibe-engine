@@ -52,7 +52,7 @@ each step, so whoever continues picks up from the last tick. **Planning document
       expected exceptions (BlockingIOError, ProcessLookupError, FileNotFoundError in cleanup, CancelledError,
       WebSocketDisconnect, StopIteration...), catches with an explanatory comment, or handlers that log / report /
       re-raise / return an error. Add Rust (`let _ =`, `.ok();`, empty `Err(_) => {}`) and Go.
-- [ ] **1d. Scores and weaknesses agree.** A factor can't be 100 with listed weaknesses: verified weaknesses lower it;
+- [x] **1d. Scores and weaknesses agree.** (done: verify_and_cap() runs right after the factor scores, BEFORE the final grade the narrative is written from; cap 100/95/94/.../90 by remaining weaknesses; real 3rd VibeBuilder report: Functionality 100->93, UI/UX 95->94, total 87.1->85.6) A factor can't be 100 with listed weaknesses: verified weaknesses lower it;
       unverified ones are dropped (1a).
 - [ ] **1e. Remove the bell curve completely** (letsvibe): ~86 references in 16 live files — `db.py` (`use_curve`,
       curve on read; leave the `curved_score` column empty and unused rather than dropping it), `storage/peer_grades.py`,

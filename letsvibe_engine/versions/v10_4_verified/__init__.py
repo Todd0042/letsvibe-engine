@@ -110,6 +110,27 @@ def evaluate(
     return report
 
 
+def verify_and_cap(scores: Dict[str, float], factors_block: Dict[str, Any], repo_index: "claim_verify.RepoIndex"):
+    """v10.4 1a + 1d on the model's per-factor answers: drop weaknesses the repo's code disproves, then cap each
+    factor that still lists weaknesses (scores is updated in place). Returns (verified weaknesses per category,
+    dropped claims, caps applied). Code Health is computed from the scan, not written by the model: not checked."""
+    verified: Dict[str, List[str]] = {}
+    dropped_claims: List[Dict[str, str]] = []
+    capped: List[Dict[str, Any]] = []
+    for cat, fname in rubric.FACTOR_OF.items():
+        if cat == "code_health":
+            continue
+        raw = _str_list((factors_block.get(cat) or {}).get("weaknesses"), limit=5)
+        kept, dropped = claim_verify.verify_claims(raw, repo_index)
+        verified[cat] = kept
+        dropped_claims += [{"factor": fname, "claim": d.claim, "reason": d.reason} for d in dropped]
+        cap = rubric.cap_for_weaknesses(len(kept))
+        if scores.get(cat, 0) > cap:
+            capped.append({"factor": fname, "from": scores[cat], "to": cap, "weaknesses": len(kept)})
+            scores[cat] = cap
+    return verified, dropped_claims, capped
+
+
 def _evaluate(
     client: Any,
     packed_repo: Any,
@@ -347,6 +368,13 @@ def _evaluate(
         profile_data=profile_data,
         code_health_score=ch_score,
     )
+    # v10.4 1a + 1d, before the final grade (the narrative is written from it): drop the weaknesses the repo's own code
+    # disproves (verify.py), then a factor that still lists weaknesses can't be perfect (rubric.cap_for_weaknesses).
+    factors_block = scoring_json.get("factors") or {}
+    repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
+    verified_weaknesses, dropped_claims, capped = verify_and_cap(scores, factors_block, repo_index)
+    if capped:
+        log.step("v10.4 scores capped: a factor that still lists weaknesses can't be perfect", capped)
     final = rubric.overall(scores)
     letter = calculate_letter_grade(final)
 
@@ -384,7 +412,6 @@ def _evaluate(
         ),
     )
 
-    factors_block = scoring_json.get("factors") or {}
     reasoning_block = narrative_json.get("reasoning") or {}
     factor_evals: Dict[str, FactorEvaluation] = {}
     for cat, fname in rubric.FACTOR_OF.items():
@@ -407,7 +434,7 @@ def _evaluate(
             weight=w,
             weighted_score=round(scores[cat] * w / 100.0, 2),
             strengths=_str_list(f_detail.get("strengths"), limit=5),
-            weaknesses=_str_list(f_detail.get("weaknesses"), limit=5),
+            weaknesses=verified_weaknesses.get(cat, []),
             reasoning=str(reasoning_block.get(cat) or "").strip(),
         )
 
@@ -429,15 +456,7 @@ def _evaluate(
     solid_features = _str_list(scoring_json.get("top_solid_features"), limit=5)
     needs_work = _str_list(scoring_json.get("top_features_needing_work"), limit=5)
 
-    # v10.4: weaknesses the repo's own code disproves never reach the report (verify.py), logged with the evidence.
-    # Code Health's weaknesses are computed from the scan, not written by the model, so they aren't checked.
-    repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
-    dropped_claims = []
-    for fname, fe in factor_evals.items():
-        if fname == rubric.FACTOR_OF["code_health"]:
-            continue
-        fe.weaknesses, dropped = claim_verify.verify_claims(list(fe.weaknesses), repo_index)
-        dropped_claims += [{"factor": fname, "claim": d.claim, "reason": d.reason} for d in dropped]
+    # v10.4: "top features needing work" are claims too (the factor weaknesses were checked before scoring).
     needs_work, dropped = claim_verify.verify_claims(needs_work, repo_index)
     dropped_claims += [{"factor": "top_features_needing_work", "claim": d.claim, "reason": d.reason} for d in dropped]
     log.step("v10.4 claim check: dropped claims the code disproves", dropped_claims, limit=20000)
