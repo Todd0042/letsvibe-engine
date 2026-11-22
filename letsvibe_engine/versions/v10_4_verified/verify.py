@@ -22,6 +22,8 @@ _FILE = re.compile(rf"(?<![\w/.-])((?:[\w.-]+/)*[\w.-]+\.(?:{CODE_EXT}))\b")
 # "line 12" / "lines 12" or "file.py:12" (a ":N" only counts right after a code file name: "127.0.0.1:11435" is a port).
 _LINE = re.compile(rf"\blines?\s+(\d{{1,6}}(?:\s*(?:,|and|&|to|-|–)\s*\d{{1,6}})*)\b|\.(?:{CODE_EXT}):(\d{{1,6}})\b")
 _IDENT = re.compile(r"`([A-Za-z_][\w.:]*?)(?:\(\))?`")
+# A plain call, no backticks (`save()` is often written bare): the name before "()".
+_CALL = re.compile(r"(?<![\w.:`])([A-Za-z_]\w*)\(\)")
 _NEGATION = re.compile(r"\b(missing|no|lacks?|lacking|without|absent|doesn't|does not|never)\b", re.I)
 REGION = 40  # lines after a function's start that count as "that function" for the "missing X" checks
 NEAR = 4  # lines from a mention of the claim's subject that count as "right there"
@@ -146,7 +148,7 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
         if bad:
             return Dropped(claim, f"cites line {bad[0]}, but {found[0]} has only {longest} lines")
 
-    idents = [i.split("::")[-1].split(".")[-1] for i in _IDENT.findall(claim)]
+    idents = [i.split("::")[-1].split(".")[-1] for i in _IDENT.findall(claim)] + _CALL.findall(_FILE.sub(" ", claim))
     idents = [i for i in idents if len(i) >= 3 and not re.fullmatch(r"\d+", i)]
     # A dotted word right after a file name is the file ("UserPrefs.h"), not Class.member.
     no_files = _FILE.sub(" ", claim)

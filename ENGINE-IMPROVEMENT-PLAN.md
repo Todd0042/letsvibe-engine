@@ -60,8 +60,11 @@ each step, so whoever continues picks up from the last tick. **Planning document
       `anna_db.py`, `scripts/calibrate_curve.py`, `scripts/sync_anna_db.py`, `scripts/benchmark_v9.py`, and the
       peer-grading tests. Raw rubric grade everywhere. **Keep** `templates/pages/archive/...` unchanged (dated legal
       record of past terms/FAQ).
-- [ ] **1f. Tests** for each of the above with realistic fixtures (a repo with deliberate vs real swallowed errors; a
+- [x] **1f. Tests** for each of the above with realistic fixtures (a repo with deliberate vs real swallowed errors; a
       report with true and false claims; small vs large repo density), plus the existing suite.
+      (done: tests/test_v10_4_full_run.py runs the WHOLE engine on a realistic repo with a fake model and found a real
+      1a gap, bare `save()` calls weren't recognised as names; fixed, 46 real claims unchanged: same 3 drops. Engine: 20 tests;
+      letsvibe: 20 failures, all pre-existing, none new.)
 
 ### 2. Engine structure (less rebuild fatigue)
 - [ ] **2a. One shared core instead of copying the whole engine per version** (20+ version folders, ~27k lines,
