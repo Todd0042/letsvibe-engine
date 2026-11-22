@@ -54,7 +54,7 @@ each step, so whoever continues picks up from the last tick. **Planning document
       re-raise / return an error. Add Rust (`let _ =`, `.ok();`, empty `Err(_) => {}`) and Go.
 - [x] **1d. Scores and weaknesses agree.** (done: verify_and_cap() runs right after the factor scores, BEFORE the final grade the narrative is written from; cap 100/95/94/.../90 by remaining weaknesses; real 3rd VibeBuilder report: Functionality 100->93, UI/UX 95->94, total 87.1->85.6) A factor can't be 100 with listed weaknesses: verified weaknesses lower it;
       unverified ones are dropped (1a).
-- [ ] **1e. Remove the bell curve completely** (letsvibe): ~86 references in 16 live files — `db.py` (`use_curve`,
+- [x] **1e. Remove the bell curve completely** (letsvibe): ~86 references in 16 live files — `db.py` (`use_curve`, (done, letsvibe e8456e2: score = analysis + Spark bonus everywhere incl. Anna; project-page rank counts Sparks; curve code, script, calibration and README text removed; archived pages kept)
       curve on read; leave the `curved_score` column empty and unused rather than dropping it), `storage/peer_grades.py`,
       `evaluator/pipeline.py`, `evaluator/rubric.py`, `web/server.py`, `web/ui.py`, `dashboard.html`, `anna_routes.py`,
       `anna_db.py`, `scripts/calibrate_curve.py`, `scripts/sync_anna_db.py`, `scripts/benchmark_v9.py`, and the
