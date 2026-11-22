@@ -124,3 +124,43 @@ def test_real_true_or_unverifiable_complaints_are_kept(tmp_path):
     repo = make_repo(tmp_path)
     for claim in KEPT:
         assert check_claim(claim, repo) is None, (claim, check_claim(claim, repo))
+
+
+# v10.4's real-model run on mx5-dash (1ba1595) kept three complaints the code disproves; none of them cites a file.
+VEHICLE_H = """#pragma once
+#include <stdint.h>
+struct VehicleData {
+    uint16_t rpm = 0;
+    uint8_t coolantC = 0;          // 01 05 (minus 40)
+    uint8_t oilTempC = 0;
+    uint8_t coolantC2 = 0;
+};
+struct Broken {
+    int speed = 0;
+    int speed = 1;
+};
+"""
+PREFS_CPP = """#include "VehicleData.h"
+static char     sBlePrefix[32] = MX5_BLE_DEVICE_PREFIX;
+static int      sRetries;
+void load() {
+    sRetries = readRetries();
+    char     wheelDid[4][8];
+}
+"""
+
+
+def test_mx5_complaints_without_a_file(tmp_path):
+    (tmp_path / "VehicleData.h").write_text(VEHICLE_H)
+    (tmp_path / "UserPrefs.cpp").write_text(PREFS_CPP)
+    repo = RepoIndex(tmp_path, files=["VehicleData.h", "UserPrefs.cpp"])
+    false = ["Duplicate field 'coolantC' in VehicleData struct causing data corruption",
+             "Inconsistent TPMS tire mapping configuration (wheelDid vs. wheelDid)",
+             "Uninitialized 'sBlePrefix' default value in UserPrefs"]
+    for claim in false:
+        assert check_claim(claim, repo), claim
+    true = ["Duplicate field 'speed' in Broken struct",           # really declared twice
+            "Uninitialized 'sRetries' used before load() runs",   # declared without a value; set later only
+            "Inconsistent units: coolantC vs. oilTempC"]          # two different things
+    for claim in true:
+        assert check_claim(claim, repo) is None, claim

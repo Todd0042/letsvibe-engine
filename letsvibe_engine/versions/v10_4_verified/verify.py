@@ -24,6 +24,10 @@ _LINE = re.compile(rf"\blines?\s+(\d{{1,6}}(?:\s*(?:,|and|&|to|-|–)\s*\d{{1,6}
 _IDENT = re.compile(r"`([A-Za-z_][\w.:]*?)(?:\(\))?`")
 # A plain call, no backticks (`save()` is often written bare): the name before "()".
 _CALL = re.compile(r"(?<![\w.:`])([A-Za-z_]\w*)\(\)")
+_VS = re.compile(r"[`'\"]?\b([A-Za-z_]\w{2,})\b[`'\"]?\s+vs\.?\s+[`'\"]?\b([A-Za-z_]\w{2,})\b")
+_DUP_MEMBER = re.compile(r"\bduplicat\w*\s+(?:field|member|entry|key|property|variable|attribute)\s+[`'\"]?([A-Za-z_]\w*)[`'\"]?"
+                         r"\s+in\s+(?:the\s+)?[`'\"]?([A-Z]\w*)[`'\"]?", re.I)
+_UNINIT = re.compile(r"\buninitiali[sz]ed\s+[`'\"]?([A-Za-z_]\w{2,})[`'\"]?", re.I)
 _NEGATION = re.compile(r"\b(missing|no|lacks?|lacking|without|absent|doesn't|does not|never)\b", re.I)
 REGION = 40  # lines after a function's start that count as "that function" for the "missing X" checks
 NEAR = 4  # lines from a mention of the claim's subject that count as "right there"
@@ -96,6 +100,9 @@ class RepoIndex:
                 self._lines[rel] = []
         return self._lines[rel]
 
+    def code_paths(self) -> list[str]:
+        return [p for p in self.paths if re.search(rf"\.({CODE_EXT})$", p)]
+
     def contains_word(self, word: str) -> bool:
         if self._blob is None:
             code = [p for p in self.paths if re.search(rf"\.({CODE_EXT})$", p)]
@@ -131,6 +138,19 @@ class RepoIndex:
                     out.append((rel, i + 1, name, body))
         return out
 
+def _body(text: str, i: int) -> str:
+    """The text between the brace at i and its matching close (at most 20k characters)."""
+    depth = 0
+    for j in range(i, min(len(text), i + 20000)):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[i + 1:j]
+    return text[i + 1:i + 20000]
+
+
 def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
     """None when the claim stands (or can't be checked); Dropped(reason) when the code contradicts it."""
     files = [m.group(1) for m in _FILE.finditer(claim)]
@@ -165,6 +185,34 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
             occurrences = sum(len(re.findall(rf"(?<!\w){re.escape(name)}(?!\w)", "\n".join(repo.lines(p)))) for p in found)
             if occurrences == 1:
                 return Dropped(claim, f"says `{name}` is duplicated, but it occurs once in {found[0]}")
+
+    # "Inconsistent X vs X": the same name on both sides compares a thing with itself.
+    m = _VS.search(claim)
+    if m and m.group(1) == m.group(2) and re.search(r"\b(inconsisten|mismatch|differ|conflict)", claim, re.I):
+        return Dropped(claim, f"compares `{m.group(1)}` with itself")
+
+    # "Duplicate field X in struct/class Y" (no file cited): count X's declarations inside Y's definition.
+    m = _DUP_MEMBER.search(claim)
+    if m:
+        member, owner = m.group(1), m.group(2)
+        for rel in repo.code_paths():
+            text = "\n".join(repo.lines(rel))
+            for d in re.finditer(rf"\b(struct|class|enum|record|interface|object|data\s+class)\s+{re.escape(owner)}\b[^;{{]*\{{", text):
+                body = _body(text, d.end() - 1)
+                decls = re.findall(rf"(?<![\w.>]){re.escape(member)}\s*(\[[^\]]*\]\s*)*(=|;|,|\{{|:)", body)
+                if len(decls) == 1:
+                    return Dropped(claim, f"says `{member}` is duplicated in {owner}, but it is declared once ({rel})")
+
+    # "Uninitialized X": X's declaration gives it a value.
+    m = _UNINIT.search(claim)
+    if m:
+        name = m.group(1)
+        for rel in repo.code_paths():
+            for j, line in enumerate(repo.lines(rel)):
+                # a declaration (a type right before the name) that gives a value; a later `x = ...` doesn't count
+                if re.search(rf"[\w>\]*&]\s+[*&]*{re.escape(name)}\s*(\[[^\]]*\]\s*)*(=(?!=)|\{{[^}}]+\}})", line) and \
+                        not re.match(r"\s*(if|while|for|return|else|case)\b", line):
+                    return Dropped(claim, f"says `{name}` is uninitialized, but {rel}:{j + 1} gives it a value: {line.strip()[:120]}")
 
     if not _NEGATION.search(claim):
         return None
