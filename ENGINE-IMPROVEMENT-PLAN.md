@@ -80,7 +80,18 @@ the last tick.
 - "One full benchmark per experiment" — replaced by the 3-repo quick set.
 - Public benchmark download, issue template, "compare with your own AI" page — community extras, not engine fixes.
 
-## Known, unrelated
+## Released (2026-11-24)
 
-- letsvibe test suite: 52 failures on engine-v10.4 (20 on 2026-11-21), same with and without the engine work, e.g.
-  badge tests get "not graded". Investigate separately.
+- v10.4 is the production default; v10.3 is legacy (registry). Website deployed (blue-green, green slot) with the
+  v10.4 analyzers; worker rebuilt. DB backup first: ~/letsvibe-backups/pre-v10.4-release-20261124-070921.db.
+- Website tests green (320; were 49 failing). Found and fixed on the way, also live before: account deletion crashed
+  after starting (session cookie not cleared); content pages and the home tabs ran off-screen on phones/foldables.
+- Undo: in registry.json set v10.3 back to production/is_default and v10.4 to testing (read live, no deploy).
+
+## Next
+
+- Tonight (Todd): full GPU run on the released code, v10.3 vs v10.4:
+  `systemd-run --user --unit=letsvibe-bench-release --nice=10 --working-directory=$HOME/Documents/GitHub/letsvibe-engine \
+   $HOME/Documents/GitHub/letsvibe/.venv/bin/python benchmark/run.py --engines v10.3 v10.4 --out ~/storage/letsvibe-benchmark/results/release`
+  Progress: `journalctl --user -u letsvibe-bench-release -f`; table: `results/release/summary.md`.
+- Anything it turns up goes into v10.5.
