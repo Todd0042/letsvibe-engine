@@ -65,9 +65,9 @@ the last tick.
       and kilo (an interactive editor) as CLI tools. Decide the family from evidence (what the repo ships and how
       it is used: package exports, entry points, UI code, README usage) and log why. Big change: quick set, then
       one overnight run.
-- [ ] **3. Contradictory checklist answers.** The prompt allows `is_default_prompt_clone: true` only with
+- [x] **3. Contradictory checklist answers.** (done: clone + TIER_2/3 -> TIER_1, logged; the clone answer was the right one each time on the benchmark (Sunflower sample, a template, kilo) and the scorer already capped it, so scores are unchanged) The prompt allows `is_default_prompt_clone: true` only with
       TIER_1; kilo got TIER_2 + clone. A contradiction is resolved by the rule the prompt states, logged. Quick set.
-- [ ] **4. Platforms when a repo ships both `start.bat` and `start.sh`** (letsvibe-good: "Windows, web"): both
+- [x] **4. Platforms when a repo ships both `start.bat` and `start.sh`** (done, letsvibe opt-in; production identical on all 15) (letsvibe-good: "Windows, web"): both
       launchers = every desktop, not Windows. Quick set (production identical, as in 1g).
 - [ ] **5. One shared engine core** (later, whenever copying gets in the way): 20+ version folders, ~27k lines,
       mostly duplicates; versions keep only what differs. Parity test per version (same inputs -> same outputs).

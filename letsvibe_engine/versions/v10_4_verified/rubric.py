@@ -325,6 +325,30 @@ def _where(findings: List[Dict[str, Any]], label: str, limit: int = 3) -> str:
     return ", ".join(spots) + more
 
 
+# The prompt pairs each value tier with one clone answer (prompts.py "value.tier & is_default_prompt_clone"):
+# TIER_1 + clone, TIER_2/TIER_3 + not a clone.
+_CLONE_TIER = "TIER_1_GENERIC_CLONE"
+_NOT_CLONE_TIERS = ("TIER_2_ITERATIVE_NICHE", "TIER_3_GENUINE_GAP_OR_HOOK")
+
+
+def resolve_contradictions(checklist: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Answers that break a pairing the prompt states are made consistent; returns what changed.
+    "Clone" + TIER_2/3: the clone answer stands and the tier becomes TIER_1. It is the specific claim (on the 2026-11
+    benchmark it was right each time: Google's Sunflower sample, a project template, the editor a tutorial is built
+    on), and the scorer already capped such a tier at TIER_1 points, so the score is unchanged: the report just stops
+    contradicting itself."""
+    out: List[Dict[str, Any]] = []
+    val = checklist.get("value") if isinstance(checklist.get("value"), dict) else None
+    if val is None:
+        return out
+    tier = str(val.get("tier") or "").strip().upper()
+    if _coerce_bool(val.get("is_default_prompt_clone")) is True and tier in _NOT_CLONE_TIERS:
+        val["tier"] = _CLONE_TIER
+        out.append({"field": "value.tier", "was": tier, "now": _CLONE_TIER,
+                    "rule": "the prompt pairs is_default_prompt_clone: true with TIER_1_GENERIC_CLONE only"})
+    return out
+
+
 def score_code_health(
     metrics: Any,
     maintainer_findings: List[Dict[str, Any]],

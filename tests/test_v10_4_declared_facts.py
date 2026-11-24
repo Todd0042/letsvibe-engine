@@ -171,3 +171,16 @@ def test_vibebuilder_at_its_graded_commit():
     # v10.4: what the project really is
     assert detect_platforms(root, declared_targets=True).platforms == ["linux", "android"]
     assert SecurityAnalyzer.scan(files, precise=True) == (0, [])
+
+
+def test_windows_and_shell_launchers_mean_every_desktop(tmp_path):
+    # letsvibe-good: start.bat + start.sh next to a Python web server
+    root = make_repo(tmp_path, {"app.py": "print('hi')\n", "start.bat": "@echo off\npython app.py\n",
+                                "start.sh": "#!/bin/sh\npython3 app.py\n", "static/index.html": "<html></html>"})
+    assert detect_platforms(root).platforms == ["windows", "web"]  # production, unchanged
+    assert detect_platforms(root, declared_targets=True).platforms == ["windows", "macos", "linux", "web"]
+
+
+def test_windows_only_installer_stays_windows(tmp_path):
+    root = make_repo(tmp_path, {"app.py": "print('hi')\n", "installer/setup.iss": "[Setup]\n", "run.bat": "app.py\n"})
+    assert detect_platforms(root, declared_targets=True).platforms == ["windows"]

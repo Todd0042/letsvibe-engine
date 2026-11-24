@@ -431,6 +431,9 @@ def _evaluate(
     timing["scoring_llm_sec"] = round(time.perf_counter() - t0, 2)
     # v10.4: checklist answers the code plainly contradicts (flags all have help text, the program tells the user about
     # errors...) are raised to what the evidence supports; never lowered. Logged with the evidence.
+    contradictions = rubric.resolve_contradictions(checklist)  # plan 3: answers the prompt's own rules rule out
+    if contradictions:
+        log.step("v10.4 contradictory checklist answers resolved", contradictions)
     repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
     corrections = code_facts.correct_checklist(checklist, rubric.FAMILY_POINTS.get(rubric_family, {}), repo_index)
     if corrections:
@@ -581,7 +584,7 @@ def _evaluate(
             "profile_detection_method": detection_method,
             "structural_signals": structural_signals,
             "checklist": checklist,
-            "checklist_corrections": [c.__dict__ for c in corrections],
+            "checklist_corrections": [c.__dict__ for c in corrections] + contradictions,
             "simplicity": scoring_json.get("simplicity") if isinstance(scoring_json.get("simplicity"), dict) else {},
             "submission_meta": submission_meta or {},
             "context": ctx_json,
