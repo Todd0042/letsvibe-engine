@@ -198,7 +198,9 @@ def _evaluate(
         except Exception:
             pass
 
-    llama = LlamaMoeClient(
+    # The model: the site's local llama-server, unless the caller brings its own client with the same generate_json /
+    # check_health / summary methods (`client.engine_llm`: the Anna edition grades with the user's chosen model).
+    llama = getattr(client, "engine_llm", None) or LlamaMoeClient(
         cancel_check_client=client,
         deadline_monotonic=time.monotonic() + TIME_LIMIT_MIN * 60,
     )
