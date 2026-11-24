@@ -66,6 +66,31 @@ each step, so whoever continues picks up from the last tick. **Planning document
       1a gap, bare `save()` calls weren't recognised as names; fixed, 46 real claims unchanged: same 3 drops. Engine: 20 tests;
       letsvibe: 20 failures, all pre-existing, none new.)
 
+### 1+. Found reviewing VibeBuilder-IDE-public for the benchmark (added with Todd's OK, 2026-11-23)
+Same rules as step 1: v10.4 (testing) only, v10.3 / production results must not change (gate on the engine, prove
+it on the 15 benchmark repos). Evidence is the v10.4 report at the pinned commit e2fa52a (2026-11-22).
+- [ ] **1g. Platforms from what the repo declares** (`letsvibe/core/platforms.py`, `evaluator/classifier.py`).
+      Report says Windows, macOS, Linux, web; truth is Linux + Android. Causes: (1) any Tauri/Electron app is
+      assumed to run on all three desktops (`@tauri-apps` in package.json -> PC_PLATFORMS) without reading the
+      declared targets: `tauri.conf.json` bundle targets `appimage/deb/rpm` = Linux only (`msi/nsis` = Windows,
+      `dmg/app` = macOS, `all`/missing = unknown); Electron: electron-builder targets. (2) Android missed: Tauri
+      mobile keeps Kotlin in `src-tauri/android/` (MainActivity, services; `src-tauri/gen/android` when generated),
+      no AndroidManifest/Gradle in the repo, and no rule looks there. (3) The fallback "any .py/.go/.rs/.js... file
+      -> Windows + macOS + Linux" (Todd's hunch: why Python projects get Windows/Mac) should become "desktop, OS not
+      stated" unless something names the OS. README badges / install sections may count as a weak signal only.
+- [ ] **1h. App type must match the evidence.** Report calls the IDE an "AI image generator front end" (archetype
+      category from the model). The category should agree with the README's own description and the detected
+      stack; when it doesn't, fall back to the README's wording / "other" instead of a confident wrong label.
+- [ ] **1i. Secret scanner false positives** (shared analyzer; Nov 12 a scanner change was reverted for side
+      effects, so gate it on the engine and compare old vs new on all 15 repos before anything else).
+      VibeBuilder's "2 secrets": `tab.handle?.exec("undo")` / `editors.activeFile?.handle?.exec(cmd)` are editor
+      commands (a method named exec, not code execution); `server/src/vbide/problems.py:46`
+      `# keep "password=", hide the value` is the code that *redacts* passwords. Rules: `obj.exec(` / `?.exec(`
+      are method calls; lines that mask/redact/hide a secret, or regex/pattern definitions for one, are not
+      hardcoded secrets.
+- [ ] **1j. Tests** for 1g-1i on the pinned VibeBuilder commit plus small fixtures (Tauri Linux-only, Tauri with
+      Android sources, plain Python CLI, a real hardcoded password that must still be caught).
+
 ### 2. Engine structure (less rebuild fatigue)
 - [ ] **2a. One shared core instead of copying the whole engine per version** (20+ version folders, ~27k lines,
       mostly duplicates). Versions keep only what differs (prompts, weights, rules, flags). Parity test per version
