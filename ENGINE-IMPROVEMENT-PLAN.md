@@ -77,6 +77,12 @@ each step, so whoever continues picks up from the last tick. **Planning document
 - [ ] **3a. Benchmark set:** 40-60 public repos across categories, languages, sizes and quality, plus the
       letsvibe-good / letsvibe-bad anchors; Todd's own repos at most a few. Half held out (checked only at the end of
       a round) to catch overfitting.
+      **Pilot (Todd, 2026-11-23): 15 repos first, 3 of them graded 3x per engine version for consistency**
+      (VibeBuilder-IDE-public, winnow-grammar, full-stack-fastapi-template). List + pinned commits + reasons:
+      `benchmark/repos.json`. **Clones persist** in `~/storage/letsvibe-benchmark/repos` (desktop) so every engine
+      version is graded against the same commits; `python3 benchmark/fetch_repos.py --verify` before each run.
+      Delete the store only when the whole plan is 100% done. Todd's repos are pinned to the commit their existing
+      report graded (free baseline). Languages: Python, JS, TS, Go, C, C/C++, Rust, Kotlin; sizes tiny-large.
 - [ ] **3b. Pair-labelling tool** (local web page): "which of these two is better at X?" for each factor; ratings via
       Bradley-Terry/Elo. Labels decided before the engine sees the repos.
 - [ ] **3c. Runner:** grades the set with a chosen engine version through the gpu-scheduler overnight (~3 LLM passes
