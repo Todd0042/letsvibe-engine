@@ -14,8 +14,8 @@ the last tick.
 - **8 GB GPU.** Don't raise the model size, the 32k context, or add multi-run voting (OOM / CPU spill / 3x time).
 - **Production v10.3 must not change.** New behaviour is gated to v10.4 (status "testing") and proven identical for
   v10.3 on the benchmark repos. The live site isn't touched until Todd deploys.
-- Branch `engine-v10.4` in both repos (letsvibe-engine, letsvibe); never main until verified. A commit per
-  sub-step; commit + push per milestone.
+- **No branches** (Todd, 2026-11-24): work on `main` in both repos. v10.4 stays safe because it is marked
+  "testing"; if something breaks, revert the commit. A commit per sub-step; commit + push per milestone.
 
 ## How changes are measured (Todd, 2026-11-24)
 
