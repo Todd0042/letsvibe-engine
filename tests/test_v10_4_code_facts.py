@@ -77,3 +77,34 @@ def test_answers_are_never_lowered(tmp_path):
     assert checklist["ui_ux"]["help_and_flag_clarity"] == "CLEAR"
     # two of three flags have no help: "undocumented" is not disproved
     assert verify.check_claim("No help text for CLI flags", repo) is None
+
+
+# ---- app / game families (plan 2 graded kilo as an app: different questions) ---------------------------------------
+
+APP = rubric.FAMILY_POINTS["gui_or_general"]
+
+
+@needs("kilo")
+def test_kilo_as_an_app():
+    repo = index("kilo")
+    checklist = {"ui_ux": {"feedback_while_working": "NONE", "accessibility_labels": "NONE"},
+                 "journey": {"onboarding_and_controls_help": "NONE", "state_and_save": "NOT_NEEDED"}}
+    facts.correct_checklist(checklist, APP, repo)
+    assert checklist["ui_ux"]["feedback_while_working"] == "SOME"            # "N bytes written", "Can't save! ..."
+    assert checklist["journey"]["onboarding_and_controls_help"] == "BASIC"   # HELP: Ctrl-S = save | Ctrl-Q = quit
+    assert checklist["journey"]["state_and_save"] == "NOT_NEEDED"            # never lowered (scores above MANUAL_SAVE here)
+    assert checklist["ui_ux"]["accessibility_labels"] == "NONE"              # nothing in code says otherwise
+    assert verify.check_claim("No visual feedback for user actions", repo) is not None
+    assert verify.check_claim("No onboarding or tutorials provided", repo) is None  # true: there is no tutorial
+
+
+def test_bundled_libraries_and_tooling_are_not_the_program(tmp_path):
+    (tmp_path / "js").mkdir()
+    (tmp_path / "js" / "engine-min.js").write_text("localStorage.setItem('k',1);fs.writeFileSync('a','b');\n")
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "flash.sh").write_text('echo "Flashed! Starting monitor (Ctrl+C to exit)..."\n')
+    (tmp_path / "game.js").write_text("function tick(){ draw(); }\n")
+    repo = verify.RepoIndex(tmp_path, files=["js/engine-min.js", "tools/flash.sh", "game.js"])
+    game = rubric.FAMILY_POINTS["game_or_sim"]
+    checklist = {"journey": {"state_and_save": "NOT_NEEDED", "onboarding_and_controls_help": "NONE"}}
+    assert facts.correct_checklist(checklist, game, repo) == []

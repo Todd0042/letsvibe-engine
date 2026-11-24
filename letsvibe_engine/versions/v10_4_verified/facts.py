@@ -82,13 +82,18 @@ def _call_text(ls: List[str], i: int) -> str:
     return text
 
 
+# Not the program itself: bundled minified libraries (clumsy-bird's melonJS-min.js "saves files") and development
+# tooling (mx5-dash's tools/flash_esp32.sh "Ctrl+C to exit" is the flasher's message, not the dashboard's screen).
+_NOT_PROGRAM = re.compile(r"[.-]min\.(js|css)$|(^|/)(vendor|third_party|node_modules|tools|scripts|build|ci|\.github)/", re.I)
+
+
 def gather(repo) -> Facts:
     """Scan the repo's code files once (RepoIndex from verify.py)."""
     cached = getattr(repo, "_facts", None)
     if cached is not None:
         return cached
     f = Facts()
-    for rel in repo.code_paths():
+    for rel in (r for r in repo.code_paths() if not _NOT_PROGRAM.search(r)):
         ls = repo.lines(rel)
         in_usage = 0
         for i, line in enumerate(ls):
@@ -142,7 +147,7 @@ _TOPIC = {
                 output""".split()),
     "saving": set("file files saving save saves saved persistence persist persistent work data disk state".split()),
     "errmsg": set("""error errors message messages failed failure failures operations operation shown displayed reported
-                  feedback""".split()),
+                  feedback visual visible mechanism mechanisms action actions status""".split()),
     "fileopen": set("""error errors handling handled unhandled check checks checking checked unchecked file files open opening
                     opens opened operations operation failures failure""".split()),
 }
@@ -179,6 +184,11 @@ def disproves(claim: str, repo) -> Optional[str]:
     if re.search(_NO + r"[^.;]{0,20}\berror messages?\b", c) and _only_about(claim, "errmsg"):
         if len(f.error_messages) >= 3:
             return f"says there are no error messages, but {len(f.error_messages)} places tell the user ({f.error_messages[0]})"
+    # "No (visual) feedback for user actions": messages telling the user what happened (errors and confirmations)
+    if re.search(_NO + r"[^.;]{0,20}\bfeedback\b", c) and _only_about(claim, "errmsg"):
+        told = f.error_messages + f.success_messages
+        if len(told) >= 3:
+            return f"says there is no feedback, but {len(told)} places tell the user what happened ({told[0]})"
     if re.search(r"\b(error[- ]handling|check\w*|handl\w*)\b[^.;]{0,30}\bfile[- ]?open|\bfile[- ]?open\w*[^.;]{0,30}\b(error|check|handl)", c) \
             and re.search(r"\b(missing|no|lacks?|without|unchecked|unhandled)\b", c) and _only_about(claim, "fileopen"):
         if f.opens_checked and not f.opens_unchecked:
@@ -255,4 +265,15 @@ def correct_checklist(checklist: Dict[str, Any], table: Dict[str, Dict[str, Any]
             _raise(fn, "confirms_success", fn_t["confirms_success"], "SOMETIMES",
                    f"{len(f.success_messages)} success messages ({f.success_messages[0]})", "functionality", out)
 
+    # App / game families (plan 2 put interactive programs here; their questions differ from a CLI's)
+    told = f.error_messages + f.success_messages
+    for fld in ("feedback_while_working", "input_and_state_feedback"):
+        if ui is not None and fld in ui_t and len(told) >= 3:
+            _raise(ui, fld, ui_t[fld], "SOME", f"{len(told)} messages telling the user what happened ({told[0]})", "ui_ux", out)
+    if jr is not None and "onboarding_and_controls_help" in jr_t and f.key_help:
+        _raise(jr, "onboarding_and_controls_help", jr_t["onboarding_and_controls_help"], "BASIC",
+               f"shows its controls on screen ({f.key_help[0]})", "journey", out)
+    if jr is not None and "state_and_save" in jr_t and f.writes:
+        _raise(jr, "state_and_save", jr_t["state_and_save"], "MANUAL_SAVE",
+               f"the code saves to files ({f.writes[0]})", "journey", out)
     return out
