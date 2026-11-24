@@ -110,7 +110,10 @@ it on the 15 benchmark repos). Evidence is the v10.4 report at the pinned commit
       report graded (free baseline). Languages: Python, JS, TS, Go, C, C/C++, Rust, Kotlin; sizes tiny-large.
 - [ ] **3b. Pair-labelling tool** (local web page): "which of these two is better at X?" for each factor; ratings via
       Bradley-Terry/Elo. Labels decided before the engine sees the repos.
-- [ ] **3c. Runner:** grades the set with a chosen engine version through the gpu-scheduler overnight (~3 LLM passes
+- [ ] **3c. Runner:** (built 2026-11-23: `benchmark/run.py`, the website's v10 path but results only to files in
+      `~/storage/letsvibe-benchmark/results/<date>/<engine>/<repo>/runN.json` + the engine's step log per run;
+      resumable; pins checked before every run; GPU app `letsvibe_bench` (weight 1). First night: v10.3 + v10.4 on the
+      15-repo pilot, 42 runs. Run as the `letsvibe-bench` user unit.) grades the set with a chosen engine version through the gpu-scheduler overnight (~3 LLM passes
       per repo, ~3-6 min each with --cpu-moe, ~3-5 h for 50); caches scans/context per commit; a 15-repo quick set
       (~1 h) for daytime checks.
 - [ ] **3d. Report per engine version:** ranking agreement with labels, pair accuracy, run-to-run consistency (the
