@@ -348,16 +348,18 @@ def score_code_health(
     strengths: List[str] = []
     weaknesses: List[str] = []
 
+    # Function complexity is measured twice: CCN (average and peak) and "oversized/complex functions". They mostly describe
+    # the same functions, so together they cost the larger penalty plus a quarter of the smaller: the overlap counts once,
+    # and fixing either still moves the score (both stay listed as weaknesses).
+    ccn_penalty = 0.0
     if avg_ccn > 5.0:
-        pen = min(20.0, (avg_ccn - 5.0) * 2.5)
-        score -= pen
+        ccn_penalty += min(20.0, (avg_ccn - 5.0) * 2.5)
         weaknesses.append(f"High average function complexity (Avg CCN {avg_ccn:.1f})")
     elif avg_ccn > 0:
         strengths.append(f"Clean average function branching (Avg CCN {avg_ccn:.1f})")
 
     if max_ccn > 20:
-        pen = min(15.0, (max_ccn - 20) * 0.5)
-        score -= pen
+        ccn_penalty += min(15.0, (max_ccn - 20) * 0.5)
         weaknesses.append(f"Deeply nested peak function (Max CCN {max_ccn})")
 
     # v10.4: findings are judged by density (per 1,000 lines of code), on a smooth curve towards the same maximum
@@ -365,12 +367,16 @@ def score_code_health(
     # and a small and a large repo with the same habits score alike. (v10.3 capped counts: 6 swallowed errors in
     # 600 lines and in 36,000 cost the same 18 points, and fixes past the cap changed nothing.)
     kloc = max(0.5, float(getattr(metrics, "total_loc", 0) or 0) / 1000.0)
+    # Small samples: in a 1,300-line program one oversized file is "0.7 per 1,000 lines", as if a large repo had one
+    # every 1,400 lines. The penalty density is taken over the code plus 2,000 lines of assumed-clean code, which barely
+    # changes a large repo and stops one or two findings from deciding a small one. (The shown density is the real one.)
+    SMALL_SAMPLE_KLOC = 2.0
 
     def density_penalty(n: int, cap: float, scale: float) -> tuple[float, float]:
         # d / (d + scale): rises quickly for the first findings, keeps rising (never flat) as they pile up, so even a
         # messy repo sees every fix; never reaches the cap.
-        d = n / kloc
-        return cap * d / (d + scale), d
+        d = n / (kloc + SMALL_SAMPLE_KLOC)
+        return cap * d / (d + scale), n / kloc
 
     for n, cap, scale, label, good in (
         (oversized_files, 16.0, 0.13, "oversized file(s) mixing responsibilities", "No oversized monolith files flagged"),
@@ -381,12 +387,16 @@ def score_code_health(
     ):
         if n > 0:
             pen, d = density_penalty(n, cap, scale)
+            if label == "oversized/complex function(s)":
+                # combined with CCN: max(a, b) + min(a, b) / 4, minus the CCN part already taken below
+                pen = max(pen, ccn_penalty) + min(pen, ccn_penalty) / 4 - ccn_penalty
             score -= pen
             where = _where(findings, label)
             weaknesses.append(f"{n} {label} ({d:.1f} per 1,000 lines){': ' + where if where else ''}")
         elif good:
             strengths.append(good)
 
+    score -= ccn_penalty
     final = round(max(0.0, min(100.0, score)), 1)
     parts = [
         f"Avg CCN {avg_ccn:.1f}",

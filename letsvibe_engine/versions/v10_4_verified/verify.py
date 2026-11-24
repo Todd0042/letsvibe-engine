@@ -5,7 +5,9 @@ A claim is dropped only when the code gives specific evidence against it:
   - it cites a line past the end of the cited file;
   - it names an identifier in backticks (`gui_start`, `adb_connect()`) that appears nowhere in the code;
   - it says a named function / cited spot is missing a timeout, error handling, validation or a user
-    notification, and the code right there clearly has one.
+    notification, and the code right there clearly has one;
+  - it says outright that there is no X (saving, flag help, error messages, checks on file opens) and the code plainly
+    has X (facts.py).
 Claims that name no file and no identifier can't be checked and are kept as they are: guessing would risk
 deleting true complaints. Every dropped claim is returned with the evidence, so the engine can log it.
 """
@@ -216,6 +218,10 @@ def check_claim(claim: str, repo: RepoIndex) -> Dropped | None:
 
     if not _NEGATION.search(claim):
         return None
+    from .facts import disproves  # code facts: "no saving" when the code writes files, etc.
+    reason = disproves(claim, repo)
+    if reason:
+        return Dropped(claim, reason)
     subjects = _subjects(claim, idents)
     for concept, (asks, evidence) in EVIDENCE.items():
         if not asks.search(claim):

@@ -39,6 +39,7 @@ from letsvibe_engine.versions.v9_3_archetypes import (
     enginelog,
 )
 
+from . import facts as code_facts
 from . import profile_detect, prompts, rubric
 from .llama_client import LlamaMoeClient
 
@@ -428,6 +429,12 @@ def _evaluate(
             raise IncompleteScoring(f"the model never answered the {', '.join(still)} checklist; not graded rather "
                                     f"than scored as if every answer were the worst")
     timing["scoring_llm_sec"] = round(time.perf_counter() - t0, 2)
+    # v10.4: checklist answers the code plainly contradicts (flags all have help text, the program tells the user about
+    # errors...) are raised to what the evidence supports; never lowered. Logged with the evidence.
+    repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
+    corrections = code_facts.correct_checklist(checklist, rubric.FAMILY_POINTS.get(rubric_family, {}), repo_index)
+    if corrections:
+        log.step("v10.4 checklist corrected by code facts", [c.__dict__ for c in corrections])
     ch_score, ch_summary, ch_strengths, ch_weaknesses = rubric.score_code_health(
         metrics, found.get("maintainer") or []
     )
@@ -443,7 +450,6 @@ def _evaluate(
     # v10.4 1a + 1d, before the final grade (the narrative is written from it): drop the weaknesses the repo's own code
     # disproves (verify.py), then a factor that still lists weaknesses can't be perfect (rubric.cap_for_weaknesses).
     factors_block = scoring_json.get("factors") or {}
-    repo_index = claim_verify.RepoIndex(Path(packed_repo.source_path), files=list(packed_repo.files))
     verified_weaknesses, dropped_claims, capped = verify_and_cap(scores, factors_block, repo_index)
     if capped:
         log.step("v10.4 scores capped: a factor that still lists weaknesses can't be perfect", capped)
@@ -575,6 +581,7 @@ def _evaluate(
             "profile_detection_method": detection_method,
             "structural_signals": structural_signals,
             "checklist": checklist,
+            "checklist_corrections": [c.__dict__ for c in corrections],
             "simplicity": scoring_json.get("simplicity") if isinstance(scoring_json.get("simplicity"), dict) else {},
             "submission_meta": submission_meta or {},
             "context": ctx_json,
