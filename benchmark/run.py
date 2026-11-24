@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Grade the pinned benchmark repos with one or more engine versions (plan step 3c).
 
-    <letsvibe venv>/bin/python benchmark/run.py --engines v10.3 v10.4 [--out DIR] [--only REPO ...]
+    <letsvibe venv>/bin/python benchmark/run.py --engines v10.3 v10.4 [--out DIR] [--only REPO ...] [--runs N]
+    Quick set (plan): --engines v10.4 --only VibeBuilder-IDE-public kilo winnow-grammar --runs 1
 
 Same path as the website's v10 grading (ingest with the engine's own file rules -> metrics -> file-based
 classification -> GPU turn -> llama-server -> engine), but results go ONLY to files under the
@@ -134,6 +135,7 @@ def main() -> int:
     ap.add_argument("--engines", nargs="+", default=["v10.3", "v10.4"])
     ap.add_argument("--out", default=str(STORE.parent / "results" / dt.date.today().isoformat()))
     ap.add_argument("--only", nargs="*", default=[])
+    ap.add_argument("--runs", type=int, default=0, help="grade each repo this many times (default: its consistency_runs)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -154,7 +156,8 @@ def main() -> int:
             "letsvibe_commit": git(Path(os.environ.get("LETSVIBE_REPO", Path.home() / "Documents/GitHub/letsvibe")), "rev-parse", "HEAD"),
             "engine_commit": git(HERE.parent, "rev-parse", "HEAD"), "python": sys.executable}
     (out / "meta.json").write_text(json.dumps(meta, indent=2))
-    plan = [(eng, r, n) for eng in a.engines for r in repos for n in range(1, int(r.get("consistency_runs", 1)) + 1)]
+    plan = [(eng, r, n) for eng in a.engines for r in repos
+            for n in range(1, (a.runs or int(r.get("consistency_runs", 1))) + 1)]
     log(f"{len(plan)} runs ({', '.join(a.engines)}) -> {out}  [GPU app: {app_id}]")
     for i, (eng, repo, n) in enumerate(plan, 1):
         dest = out / eng / repo["id"] / f"run{n}.json"
