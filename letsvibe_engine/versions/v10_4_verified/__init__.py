@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from letsvibe.analyzers.code_scan import scan as code_scan
+from letsvibe.analyzers.security import SecurityAnalyzer
+from letsvibe.core.platforms import detect_platforms
 from letsvibe.analyzers.host_headers import discover_in_repo_host_headers
 from letsvibe.analyzers.malicious_patterns import scan as malicious_scan
 from letsvibe.core.models import (
@@ -49,6 +51,43 @@ TIME_LIMIT_MIN = float(os.environ.get("LETSVIBE_TIME_LIMIT_MIN", "60"))
 
 class IncompleteScoring(RuntimeError):
     """The model's scoring answer is missing whole sections even after asking for them: the grading stops."""
+
+
+# 1h: the common-app-type list is only trusted for a clear match. Measured on the 15 benchmark repos
+# (README summaries): right matches were >= 0.62 and ahead of the runner-up; wrong ones 0.50-0.60.
+CLICHE_MIN_SIMILARITY = 0.62
+CLICHE_MIN_MARGIN = 0.02
+
+
+def cliche_is_clear(top: List[Dict[str, Any]]) -> bool:
+    if not top or top[0].get("similarity", 0) < CLICHE_MIN_SIMILARITY:
+        return False
+    return len(top) < 2 or top[0]["similarity"] - top[1].get("similarity", 0) >= CLICHE_MIN_MARGIN
+
+
+def apply_declared_facts(packed_repo: Any, metrics: Any, classification: Any, log: Any) -> None:
+    """1g + 1i: platforms from what the repo declares (build targets, Android/iOS sources, OS-specific code)
+    and secret findings without known false positives (declared methods named exec, comments, placeholders,
+    minified third-party files, values spanning lines). Shared results stay as they were for older engines;
+    an older letsvibe without these options keeps them here too, said in the log."""
+    root = Path(packed_repo.source_path)
+    if "declared_targets" in inspect.signature(detect_platforms).parameters:
+        det = detect_platforms(root, declared_targets=True)
+        before = list(getattr(classification, "platforms", []) or [])
+        if det.platforms and list(det.platforms) != before:
+            log.step("platforms", f"{', '.join(before) or 'none'} -> {', '.join(det.platforms)} ({'; '.join(det.signals)})")
+            classification.platforms = list(det.platforms)
+            if det.device_profile and not getattr(classification, "device_profile", ""):
+                classification.device_profile = det.device_profile
+    else:
+        log.step("note", "letsvibe has no declared-target platform rules yet (deploy letsvibe engine-v10.4): shared platforms used")
+    if "precise" in inspect.signature(SecurityAnalyzer.scan).parameters:
+        n, findings = SecurityAnalyzer.scan(packed_repo.files, precise=True)
+        if n != metrics.detected_secrets_count:
+            log.step("secrets", f"{metrics.detected_secrets_count} -> {n} findings with the precise rules")
+        metrics.detected_secrets_count, metrics.secret_findings = n, findings
+    else:
+        log.step("note", "letsvibe has no precise secret rules yet (deploy letsvibe engine-v10.4): shared findings used")
 
 
 def _platform_note(classification: Any) -> str:
@@ -149,6 +188,7 @@ def _evaluate(
     started = time.perf_counter()
     timing: Dict[str, float] = {}
     issues = list(getattr(classification, "issues", []) or [])
+    apply_declared_facts(packed_repo, metrics, classification, log)
 
     unload = getattr(client, "unload_all_models", None)
     if callable(unload):
@@ -216,7 +256,9 @@ def _evaluate(
     if getattr(client, "host", None):
         try:
             top = cliche.closest(client.host, data)
-            if top:
+            if top and not cliche_is_clear(top):
+                log.step("cliche", f"weak match not used: {top[0]['archetype']} ({top[0]['similarity']}), next {top[1]['archetype'] if len(top) > 1 else '-'}")
+            if top and cliche_is_clear(top):
                 cliche_fact = (
                     f"Closest common app type: '{top[0]['archetype']}' "
                     f"({round(top[0]['similarity'] * 100)}% similar).\n"
@@ -473,7 +515,7 @@ def _evaluate(
     arch_name = str(ctx_json.get("identified_archetype") or packed_repo.repo_name)[:120]
     archetype = ProjectArchetype(
         name=arch_name,
-        category=(top[0]["archetype"] if top else "General Software Project"),
+        category=(top[0]["archetype"] if cliche_is_clear(top) else "General Software Project"),
         primary_language=primary,
         target_audience=str(ctx_json.get("audience") or "People who use this kind of app")[:240],
         core_purpose=str(ctx_json.get("purpose") or data.get("readme_blurb") or arch_name)[:300],

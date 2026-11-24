@@ -69,7 +69,7 @@ each step, so whoever continues picks up from the last tick. **Planning document
 ### 1+. Found reviewing VibeBuilder-IDE-public for the benchmark (added with Todd's OK, 2026-11-23)
 Same rules as step 1: v10.4 (testing) only, v10.3 / production results must not change (gate on the engine, prove
 it on the 15 benchmark repos). Evidence is the v10.4 report at the pinned commit e2fa52a (2026-11-22).
-- [ ] **1g. Platforms from what the repo declares** (`letsvibe/core/platforms.py`, `evaluator/classifier.py`).
+- [x] **1g. Platforms from what the repo declares** (done 2026-11-23: letsvibe `detect_platforms(declared_targets=True)`, used by v10.4 only; production identical on all 15 benchmark repos. Fixed: VibeBuilder -> linux+android, full-stack-fastapi-template -> web, kilo -> macos+linux, requests/pipreqs -> all three (docs/make.bat is a docs builder; code that branches by OS incl. Windows is cross-platform). Change from the text below: no new "OS not stated" value (it would ripple through filters/UI); instead the fallback narrows only on evidence: Linux-only code, POSIX C includes, Windows-only calls) (`letsvibe/core/platforms.py`, `evaluator/classifier.py`).
       Report says Windows, macOS, Linux, web; truth is Linux + Android. Causes: (1) any Tauri/Electron app is
       assumed to run on all three desktops (`@tauri-apps` in package.json -> PC_PLATFORMS) without reading the
       declared targets: `tauri.conf.json` bundle targets `appimage/deb/rpm` = Linux only (`msi/nsis` = Windows,
@@ -78,17 +78,17 @@ it on the 15 benchmark repos). Evidence is the v10.4 report at the pinned commit
       no AndroidManifest/Gradle in the repo, and no rule looks there. (3) The fallback "any .py/.go/.rs/.js... file
       -> Windows + macOS + Linux" (Todd's hunch: why Python projects get Windows/Mac) should become "desktop, OS not
       stated" unless something names the OS. README badges / install sections may count as a weak signal only.
-- [ ] **1h. App type must match the evidence.** Report calls the IDE an "AI image generator front end" (archetype
+- [x] **1h. App type must match the evidence.** (done: the common-app-type match is used only at similarity >= 0.62 and >= 0.02 ahead of the runner-up, measured on the 15 repos; otherwise category 'General Software Project', the model's own description stays the name, and the weak match is no longer fed to the grader; logged) Report calls the IDE an "AI image generator front end" (archetype
       category from the model). The category should agree with the README's own description and the detected
       stack; when it doesn't, fall back to the README's wording / "other" instead of a confident wrong label.
-- [ ] **1i. Secret scanner false positives** (shared analyzer; Nov 12 a scanner change was reverted for side
+- [x] **1i. Secret scanner false positives** (done: `SecurityAnalyzer.scan(precise=True)`, v10.4 only; production identical on all 15. Also found on the benchmark: a template placeholder `password = "{{ password }}"` (fastapi template) and `eval` inside a bundled minified engine (clumsy-bird's melonJS-min.js). The "password" hit in VibeBuilder was really the rule matching across lines from a comment into later code) (shared analyzer; Nov 12 a scanner change was reverted for side
       effects, so gate it on the engine and compare old vs new on all 15 repos before anything else).
       VibeBuilder's "2 secrets": `tab.handle?.exec("undo")` / `editors.activeFile?.handle?.exec(cmd)` are editor
       commands (a method named exec, not code execution); `server/src/vbide/problems.py:46`
       `# keep "password=", hide the value` is the code that *redacts* passwords. Rules: `obj.exec(` / `?.exec(`
       are method calls; lines that mask/redact/hide a secret, or regex/pattern definitions for one, are not
       hardcoded secrets.
-- [ ] **1j. Tests** for 1g-1i on the pinned VibeBuilder commit plus small fixtures (Tauri Linux-only, Tauri with
+- [x] **1j. Tests** for 1g-1i (done: tests/test_v10_4_declared_facts.py, 18 tests incl. the pinned VibeBuilder commit and real problems still caught; engine suite 43 passed; letsvibe suite: the same 52 failures with and without the change. NOTE: that's up from 20 on 2026-11-21 for an unrelated reason, e.g. badge tests get "not graded": investigate separately) on the pinned VibeBuilder commit plus small fixtures (Tauri Linux-only, Tauri with
       Android sources, plain Python CLI, a real hardcoded password that must still be caught).
 
 ### 2. Engine structure (less rebuild fatigue)
