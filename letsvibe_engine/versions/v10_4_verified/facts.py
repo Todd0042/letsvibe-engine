@@ -60,6 +60,8 @@ class Facts:
     writes: List[str] = field(default_factory=list)
     opens_checked: List[str] = field(default_factory=list)
     opens_unchecked: List[str] = field(default_factory=list)
+    loading_ui: List[str] = field(default_factory=list)          # spinners, progress bars, loading screens
+    missing_file_checks: List[str] = field(default_factory=list)  # "does this file exist?" before using it
 
     def summary(self) -> Dict[str, Any]:
         return {k: v[:3] + ([f"+{len(v) - 3} more"] if len(v) > 3 else []) for k, v in self.__dict__.items() if v}
@@ -87,6 +89,13 @@ def _call_text(ls: List[str], i: int) -> str:
 _NOT_PROGRAM = re.compile(r"[.-]min\.(js|css)$|(^|/)(vendor|third_party|node_modules|tools|scripts|build|ci|\.github)/", re.I)
 
 
+_LOADING_FILE = re.compile(r"(^|/)loading\.(tsx|jsx|vue|svelte)$")
+_LOADING_UI = re.compile(r"\b(spinner|Spinner|animate-spin|Skeleton|ProgressBar|CircularProgress|LinearProgress|"
+                         r"ActivityIndicator|ProgressIndicator|aria-busy|<progress)\b|\b(isLoading|loading|isPending)\s*(&&|\?)")
+_MISSING_FILE_CHECK = re.compile(r"\.exists\(\)|os\.path\.(exists|isfile)\(|FileNotFoundError|ENOENT|existsSync\(|"
+                                 r"os\.ErrNotExist|NoSuchFileException|\.is_file\(\)")
+
+
 def gather(repo) -> Facts:
     """Scan the repo's code files once (RepoIndex from verify.py)."""
     cached = getattr(repo, "_facts", None)
@@ -95,6 +104,8 @@ def gather(repo) -> Facts:
     f = Facts()
     for rel in (r for r in repo.code_paths() if not _NOT_PROGRAM.search(r)):
         ls = repo.lines(rel)
+        if _LOADING_FILE.search(rel):
+            f.loading_ui.append(f"{rel}:1")
         in_usage = 0
         for i, line in enumerate(ls):
             at = f"{rel}:{i + 1}"
@@ -123,6 +134,10 @@ def gather(repo) -> Facts:
                 f.error_messages.append(at)
             if _WRITES.search(line):
                 f.writes.append(at)
+            if _LOADING_UI.search(line):
+                f.loading_ui.append(at)
+            if _MISSING_FILE_CHECK.search(line):
+                f.missing_file_checks.append(at)
             m = _OPEN_CALL.search(line)
             if m and not re.search(r"\bdef |\bfn |function ", line):
                 before = ls[max(0, i - 12):i]
@@ -148,6 +163,10 @@ _TOPIC = {
     "saving": set("file files saving save saves saved persistence persist persistent work data disk state".split()),
     "errmsg": set("""error errors message messages failed failure failures operations operation shown displayed reported
                   feedback visual visible mechanism mechanisms action actions status""".split()),
+    "loading": set("""loading load loader state states indicator indicators spinner spinners progress feedback while
+                   working busy visual""".split()),
+    "missingfile": set("""error errors handling handled check checks checking missing nonexistent absent data config
+                       configuration settings save state file files first run runs startup start launch""".split()),
     "fileopen": set("""error errors handling handled unhandled check checks checking checked unchecked file files open opening
                     opens opened operations operation failures failure""".split()),
 }
@@ -189,6 +208,14 @@ def disproves(claim: str, repo) -> Optional[str]:
         told = f.error_messages + f.success_messages
         if len(told) >= 3:
             return f"says there is no feedback, but {len(told)} places tell the user what happened ({told[0]})"
+    if re.search(_NO + r"[^.;]{0,20}\b(loading (states?|indicators?|spinners?|screens?)|progress (indicators?|bars?)|spinners?)\b", c) \
+            and _only_about(claim, "loading"):
+        if len(f.loading_ui) >= 2:
+            return f"says there are no loading indicators, but the UI has {len(f.loading_ui)} ({f.loading_ui[0]})"
+    if re.search(r"\b(missing|nonexistent|absent)\s+(\w+\s+)?files?\b", c) and re.search(r"\b(handl|check)", c) \
+            and _only_about(claim, "missingfile"):
+        if f.missing_file_checks:
+            return f"says a missing file isn't handled, but the code checks for it ({', '.join(f.missing_file_checks[:2])})"
     if re.search(r"\b(error[- ]handling|check\w*|handl\w*)\b[^.;]{0,30}\bfile[- ]?open|\bfile[- ]?open\w*[^.;]{0,30}\b(error|check|handl)", c) \
             and re.search(r"\b(missing|no|lacks?|without|unchecked|unhandled)\b", c) and _only_about(claim, "fileopen"):
         if f.opens_checked and not f.opens_unchecked:
@@ -270,6 +297,9 @@ def correct_checklist(checklist: Dict[str, Any], table: Dict[str, Dict[str, Any]
     for fld in ("feedback_while_working", "input_and_state_feedback"):
         if ui is not None and fld in ui_t and len(told) >= 3:
             _raise(ui, fld, ui_t[fld], "SOME", f"{len(told)} messages telling the user what happened ({told[0]})", "ui_ux", out)
+    if ui is not None and "feedback_while_working" in ui_t and len(f.loading_ui) >= 2:
+        _raise(ui, "feedback_while_working", ui_t["feedback_while_working"], "SOME",
+               f"{len(f.loading_ui)} loading indicators/screens ({f.loading_ui[0]})", "ui_ux", out)
     if jr is not None and "onboarding_and_controls_help" in jr_t and f.key_help:
         _raise(jr, "onboarding_and_controls_help", jr_t["onboarding_and_controls_help"], "BASIC",
                f"shows its controls on screen ({f.key_help[0]})", "journey", out)

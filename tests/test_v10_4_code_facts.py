@@ -108,3 +108,21 @@ def test_bundled_libraries_and_tooling_are_not_the_program(tmp_path):
     game = rubric.FAMILY_POINTS["game_or_sim"]
     checklist = {"journey": {"state_and_save": "NOT_NEEDED", "onboarding_and_controls_help": "NONE"}}
     assert facts.correct_checklist(checklist, game, repo) == []
+
+
+@needs("letsvibe-good")
+def test_missing_file_handled_at_load():
+    repo = index("letsvibe-good")
+    # store.py:33 `if not self.path.exists()`; the claim cites the wrong file and line
+    assert verify.check_claim("No error handling for missing data file on first run (fairshare.py line 25)", repo) is not None
+    assert verify.check_claim("No validation for empty chore list in setup (server.py line 102)", repo) is None  # not ours
+
+
+@needs("taxonomy")
+def test_loading_screens_are_feedback():
+    repo = index("taxonomy")
+    table = rubric.FAMILY_POINTS["gui_or_general"]
+    checklist = {"ui_ux": {"feedback_while_working": "NOT_SHOWN", "clarity": "CLUTTERED_OR_TECHNICAL"}}
+    facts.correct_checklist(checklist, table, repo)
+    assert checklist["ui_ux"] == {"feedback_while_working": "SOME", "clarity": "CLUTTERED_OR_TECHNICAL"}
+    assert verify.check_claim("Missing loading states for contentlayer data fetching", repo) is None  # names more: stays

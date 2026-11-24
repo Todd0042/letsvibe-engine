@@ -47,13 +47,20 @@ the last tick.
   (flag help, usage text, error/success messages, file writes, checked file opens); Code Health fair to small
   programs. 3-repo re-run: kilo 48.6, pipreqs 67.1, mx5-dash 64.1.
 
+- **Full run 2026-11-24** (v10.4, all 15, after items 1-2; `results/2026-11-24-full`): no errors; repeats identical;
+  anchor winnow 91.3 (night 1: 90.1); families right (requests, commander.js -> library, kilo -> app); platforms and
+  secrets right. Review of suspect changes: letsvibe-good "chore chart" is right; two false facts found and fixed
+  (a missing-file check at store.py:33 not seen; taxonomy's 4 loading screens + spinner not counted as feedback);
+  glow's app type "Markdown to HTML/PDF converter" is wrong (no terminal-viewer archetype; label only, the model's
+  own name is right). Score moves that remain are the model's judgement (e.g. letsvibe-good "mostly works"), not facts.
+
 ## To do (in order)
 
-- [ ] **1. Claim checker reads whole functions.** A line like `return func() ...` / `return foo(x)` was taken for a
+- [x] **1. Claim checker reads whole functions.** (done 7424124) A line like `return func() ...` / `return foo(x)` was taken for a
       new function definition, so the checker read only a function's first line and kept false claims (glow:
       "no error handling for file reading in loadLocalMarkdown", handled at ui/stash.go:848). Affects Go, Python,
       Kotlin, Rust. Quick set.
-- [ ] **2. Right rubric family.** The family picks the checklist questions, so a wrong one makes every factor wrong:
+- [x] **2. Right rubric family.** (done 4496a29; full run 2026-11-24 below) The family picks the checklist questions, so a wrong one makes every factor wrong:
       requests (a library) is graded as a GUI app ("No UI elements" weaknesses), commander.js (a library for CLIs)
       and kilo (an interactive editor) as CLI tools. Decide the family from evidence (what the repo ships and how
       it is used: package exports, entry points, UI code, README usage) and log why. Big change: quick set, then
