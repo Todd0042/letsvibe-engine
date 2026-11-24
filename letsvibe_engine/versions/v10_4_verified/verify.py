@@ -112,9 +112,24 @@ class RepoIndex:
         return re.search(rf"(?<![\w]){re.escape(word)}(?![\w])", self._blob) is not None
 
     _DEF = re.compile(r"\b(?:async\s+)?(?:def|fn|func|function|fun)\s+([A-Za-z_]\w*)"
-                      # C/C++/Java/C#/Kotlin-style: a return type, then [Class::]name( ... ) without a trailing ';'
-                      r"|^\s*(?:[\w<>\[\],*&]+\s+)+(?:\w+::)?([A-Za-z_]\w*)\s*\([^;]*$")
-    _KEYWORDS = {"if", "for", "while", "switch", "return", "catch", "else", "new", "sizeof", "delete", "throw"}
+                      # Go method: func (m *model) name(
+                      r"|\bfunc\s+\([^)]*\)\s*([A-Za-z_]\w*)\s*\("
+                      # C/C++/Java/C#/Kotlin-style: a return type, then [Class::]name( ... ) without a trailing ';'.
+                      # Not a statement: `return foo(x)` / `return func() T {` (Go, Python, Kotlin have no ';') is a
+                      # call, and reading it as a definition cut every such function off after its first line.
+                      r"|^\s*(?!(?:return|else|if|elif|for|while|switch|case|throw|raise|new|await|yield|go|defer|"
+                      r"delete|do|not|assert|print|echo|lambda|in|is|and|or)\b)"
+                      r"(?:[\w<>\[\],*&]+\s+)+(?:\w+::)?([A-Za-z_]\w*)\s*\([^;]*$")
+    _KEYWORDS = {"if", "for", "while", "switch", "return", "catch", "else", "new", "sizeof", "delete", "throw", "func",
+                 "function"}
+
+    def _definition(self, line: str) -> str | None:
+        """The name a line defines, or None (one test for both a function's start and its end)."""
+        m = self._DEF.search(line)
+        if not m:
+            return None
+        name = m.group(1) or m.group(2) or m.group(3)
+        return None if name in self._KEYWORDS else name
 
     def functions_matching(self, subjects: list[str], within: list[str], exact_only: bool) -> list[tuple[str, int, str, list[str]]]:
         """Function definitions whose name is a subject, or (inside the cited files only) contains one as a word part
@@ -124,17 +139,14 @@ class RepoIndex:
         for rel in within:
             ls = self.lines(rel)
             for i, line in enumerate(ls):
-                m = self._DEF.search(line)
-                if not m:
-                    continue
-                name = m.group(1) or m.group(2)
-                if name in self._KEYWORDS:
+                name = self._definition(line)
+                if not name:
                     continue
                 parts = set(re.split(r"_|(?<=[a-z])(?=[A-Z])", name.lower()))
                 if name.lower() in subs or (not exact_only and subs & parts):
                     body = [ls[i]]
                     for nxt in ls[i + 1:i + REGION]:  # the function's own lines: stop at the next definition
-                        if self._DEF.search(nxt):
+                        if self._definition(nxt):
                             break
                         body.append(nxt)
                     out.append((rel, i + 1, name, body))

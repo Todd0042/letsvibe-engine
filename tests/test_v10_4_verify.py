@@ -4,6 +4,9 @@ that must survive."""
 
 from pathlib import Path
 
+import pytest
+
+from letsvibe_engine.versions.v10_4_verified import verify
 from letsvibe_engine.versions.v10_4_verified.verify import RepoIndex, check_claim, verify_claims
 
 TUNNEL_RS = """use std::time::Duration;
@@ -123,3 +126,43 @@ def test_ports_and_addresses_are_not_line_numbers(tmp_path):
     claim = "No fallback for missing Llama server URL (uses default 127.0.0.1:11435) - server/net.py (line 3)"
     assert check_claim(claim, repo) is None
     assert check_claim("Crash at server/net.py:9000 on bad input", repo).reason.startswith("cites line 9000")
+
+
+# ---- whole functions: a `return f(...)` line is a call, not the next definition (2026-11-24) -------------------------
+
+def test_return_call_does_not_end_the_function(tmp_path):
+    # Python/Go/Kotlin have no ';', so `return parse(raw)` used to look like a C-style definition of parse() and the
+    # checker read only the function's first line, keeping a false "no error handling" claim.
+    (tmp_path / "loader.py").write_text(
+        "import json\n\n"
+        "def load_config(path):\n"
+        "    if not path:\n"
+        "        return defaults()\n"
+        "    try:\n"
+        "        raw = open(path).read()\n"
+        "    except OSError as exc:\n"
+        "        raise ConfigError(f'cannot read {path}') from exc\n"
+        "    return json.loads(raw)\n\n"
+        "def defaults():\n"
+        "    return {}\n\n"
+        "class ConfigError(Exception):\n"
+        "    pass\n")
+    repo = verify.RepoIndex(tmp_path, files=["loader.py"])
+    assert verify.check_claim("No error handling in load_config() when the file can't be read", repo) is not None
+    # and a function that really has none keeps the claim
+    assert verify.check_claim("No error handling in defaults()", repo) is None
+
+
+BENCH_GLOW = Path.home() / "storage/letsvibe-benchmark/repos/glow"
+
+
+@pytest.mark.skipif(not BENCH_GLOW.exists(), reason="benchmark store not cloned")
+def test_glow_go_closure_and_methods():
+    files = [p.relative_to(BENCH_GLOW).as_posix() for p in (BENCH_GLOW / "ui").glob("*.go")]
+    repo = verify.RepoIndex(BENCH_GLOW, files=files)
+    # night 1 kept this; the read error is handled at ui/stash.go:848
+    d = verify.check_claim("No error handling for file reading in loadLocalMarkdown (ui/stash.go line 120)", repo)
+    assert d is not None and "ui/stash.go:848" in d.reason
+    # Go methods with a receiver are definitions too
+    names = [n for _, _, n, _ in repo.functions_matching(["update"], ["ui/stash.go"], exact_only=True)]
+    assert "update" in names
