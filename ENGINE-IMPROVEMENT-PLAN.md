@@ -108,9 +108,13 @@ it on the 15 benchmark repos). Evidence is the v10.4 report at the pinned commit
       version is graded against the same commits; `python3 benchmark/fetch_repos.py --verify` before each run.
       Delete the store only when the whole plan is 100% done. Todd's repos are pinned to the commit their existing
       report graded (free baseline). Languages: Python, JS, TS, Go, C, C/C++, Rust, Kotlin; sizes tiny-large.
-- [ ] **3b. Pair-labelling tool** (local web page): "which of these two is better at X?" for each factor; ratings via
-      Bradley-Terry/Elo. Labels decided before the engine sees the repos.
-- [ ] **3c. Runner:** (built 2026-11-23: `benchmark/run.py`, the website's v10 path but results only to files in
+- [-] **3b. Pair-labelling tool: DROPPED (Todd, 2026-11-24).** Human labels, his own or a community's, would make
+      one person's (or a crowd's) taste the curve everyone else's work is judged by: the opposite of the point of
+      LetsVibe (an unbiased opinion). The yardstick for 3d must be things that are true or false, not taste.
+- [x] **3c. Runner:** (night 1, 2026-11-23: 42 runs, no errors, repeat runs identical; v10.4 dropped kilo 64->41,
+      pipreqs 81->60, mx5-dash 69->60, traced to false "there is no X" claims/answers + code-health penalties too heavy
+      for small programs; fixed in dbb0095 (facts.py, code-health shrinkage, CCN/oversized counted once); 3-repo
+      re-run: kilo 48.6, pipreqs 67.1, mx5-dash 64.1. Built 2026-11-23: `benchmark/run.py`, the website's v10 path but results only to files in
       `~/storage/letsvibe-benchmark/results/<date>/<engine>/<repo>/runN.json` + the engine's step log per run;
       resumable; pins checked before every run; GPU app `letsvibe_bench` (weight 1). First night: v10.3 + v10.4 on the
       15-repo pilot, 42 runs. Run as the `letsvibe-bench` user unit.) grades the set with a chosen engine version through the gpu-scheduler overnight (~3 LLM passes
