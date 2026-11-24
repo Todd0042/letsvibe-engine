@@ -9,7 +9,7 @@
 # 🧠 LetsVibe Engine — The Versioned Evaluation Engine for Vibe-Coded Software
 
 [![Version](https://img.shields.io/badge/Version-9.4.0-ff2a85.svg)](https://github.com/Todd0042/letsvibe-engine)
-[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/License-PolyForm%20Shield%201.0.0-00f0ff.svg)](LICENSE)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-00f0ff.svg)](LICENSE)
 [![Rubric](https://img.shields.io/badge/Rubric-v9.4%20(Production)-blueviolet.svg)](https://letsvibe.todd0042.dev/how-it-works)
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-39ff14.svg)]()
 [![AI: 100% local](https://img.shields.io/badge/AI-100%25%20Local%20(Ollama)-black.svg)](https://ollama.com)
@@ -251,7 +251,7 @@ letsvibe-engine/
 | **Claude Code** (Anthropic, Claude Opus 5.5) | Experience grading (`dossier.py`, quote checks, fixed points, `reconcile.py`), reference calibration, and hybrid `v8`/`v9` pipeline refinements |
 
 ### ⚖️ License
-* **[PolyForm Shield License 1.0.0](LICENSE)**: You may read, inspect, fork, use, and modify `letsvibe-engine` for personal, educational, nonprofit, or non-competing commercial purposes, provided you do not use it to build or operate a competing vibe-coded software leaderboard or evaluation service. See [LICENSE](LICENSE) for full terms.
+* **License**: [PolyForm Noncommercial License 1.0.0](LICENSE) — free for personal, hobby, educational, research and nonprofit use; commercial use (inside a company, in a paid product or service, or for profit) requires a separate license from [Todd0042](https://github.com/Todd0042).
 * Questions & security reports: see [Todd0042/letsvibe](https://github.com/Todd0042/letsvibe) or email **[todd.0042.git@gmail.com](mailto:todd.0042.git@gmail.com)**.
 
 ---
